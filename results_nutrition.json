@@ -1,0 +1,305 @@
+{
+  "n_foods": 8690,
+  "n_nutrients": 57,
+  "sample_nutrients": [
+    "alcohol",
+    "alpha_carotene",
+    "alpha_linolenic_acid",
+    "alpha_tocopherol",
+    "arachidonic_acid",
+    "beta_carotene",
+    "butyric_acid",
+    "caffeine",
+    "calcium",
+    "calories",
+    "capric_acid",
+    "caproic_acid",
+    "caprylic_acid",
+    "carbohydrates",
+    "cholesterol"
+  ],
+  "skewness_raw_median": 9.689870342489622,
+  "skewness_log_median": 1.8529150519154425,
+  "log_vs_raw": {
+    "k10_raw_max_cluster_pct": 52.243958573072504,
+    "k10_log_max_cluster_pct": 22.9228998849252,
+    "k10_raw_sizes_sorted": [
+      4540,
+      1837,
+      1426,
+      228,
+      207,
+      196,
+      128,
+      109,
+      15,
+      4
+    ],
+    "k10_log_sizes_sorted": [
+      1992,
+      1562,
+      1373,
+      1011,
+      788,
+      769,
+      618,
+      305,
+      221,
+      51
+    ],
+    "k10_raw_vs_log_ari": 0.2656923426417956,
+    "k30_raw_max_cluster_pct": 41.63406214039125,
+    "k30_log_max_cluster_pct": 7.031070195627158,
+    "k30_raw_top3_pct": 64.66052934407365,
+    "k30_log_top3_pct": 19.37859608745685,
+    "k30_raw_vs_log_ari": 0.17070711856584253
+  },
+  "choose_k": {
+    "k_values": [
+      2,
+      4,
+      6,
+      8,
+      10,
+      12,
+      15,
+      20,
+      25,
+      30
+    ],
+    "wcss": [
+      408013.12938733527,
+      354689.46453963075,
+      307165.19655822957,
+      275080.84835835395,
+      256385.02365181246,
+      239766.7249124403,
+      218758.19636924486,
+      193897.20072367415,
+      177690.60244488172,
+      167640.19248931398
+    ],
+    "silhouette": [
+      0.1848052339343232,
+      0.1748696795090372,
+      0.133088076679318,
+      0.1311454279650193,
+      0.12594014728945235,
+      0.13725144563714917,
+      0.14664902794147017,
+      0.14708256750325832,
+      0.15625894258104234,
+      0.14297300770968396
+    ],
+    "cv_silhouette_mean": [
+      0.18461204512081097,
+      0.16172303296894436,
+      0.1298937161769591,
+      0.1286874073316065,
+      0.12361808001590038,
+      0.13363016784137544,
+      0.1394437190662569,
+      0.14163896646028915,
+      0.14336266754941812,
+      0.149479903800556
+    ],
+    "cv_silhouette_std": [
+      0.0054793233722401444,
+      0.02975911754892021,
+      0.004688374355836097,
+      0.002221676765859531,
+      0.0031323940270690065,
+      0.004012151547740136,
+      0.008351424190411509,
+      0.007791451961306444,
+      0.006158249954497178,
+      0.00716443434431635
+    ],
+    "cv_dist_mean": [
+      46.9900223874507,
+      41.130189772259484,
+      35.67928133216124,
+      31.807942031185775,
+      29.811347563059297,
+      27.962981943301873,
+      25.859636404362163,
+      22.76131587143408,
+      21.108138247420705,
+      19.709458236638362
+    ]
+  },
+  "pcs_ari_matrix_key_pairs": {
+    "log_s42_vs_s100": 0.9193122358863988,
+    "log_s42_vs_s2024": 0.8813011320782106,
+    "log_s42_vs_remove_fat": 0.8102768819695024,
+    "log_s42_vs_ward": 0.4058479201669376,
+    "log_s42_vs_raw": 0.2397050836104824
+  },
+  "pcs_subsampling_ari": {
+    "log_k10_mean": 0.790032663959758,
+    "log_k10_std": 0.09937668154272035,
+    "log_k30_mean": 0.6496704935108473,
+    "log_k30_std": 0.05256259544950889,
+    "raw_k10_mean": 0.8867065234983187,
+    "raw_k10_std": 0.07555220434436874
+  },
+  "prototypes_k10": {
+    "cluster_1": {
+      "size": 769,
+      "examples": [
+        "Applesauce with other fruits",
+        "Applesauce, stewed apples, NS as to sweetened or unsweetened; sweetened, NS as to type of sweetener",
+        "Applesauce, stewed apples, with sugar",
+        "Pear nectar"
+      ]
+    },
+    "cluster_2": {
+      "size": 618,
+      "examples": [
+        "Bean cake",
+        "Cake or cupcake, yellow, with icing or filling",
+        "Cookie, peanut butter",
+        "Cookie, peanut butter sandwich"
+      ]
+    },
+    "cluster_3": {
+      "size": 1011,
+      "examples": [
+        "Turkey, light or dark meat, fried, coated, skin eaten",
+        "Lau lau",
+        "Salami, made from any type of meat, reduced fat",
+        "Adobo, with rice"
+      ]
+    },
+    "cluster_4": {
+      "size": 788,
+      "examples": [
+        "Muffin, English, oat bran, with raisins",
+        "Muffin, English, oat bran",
+        "Bread, oatmeal",
+        "Roll, oatmeal"
+      ]
+    },
+    "cluster_5": {
+      "size": 305,
+      "examples": [
+        "Cake, pineapple, upside down",
+        "Yogurt dressing",
+        "Grilled cheese sandwich, Cheddar cheese, on white bread",
+        "Croissant sandwich, filled with ham and cheese"
+      ]
+    },
+    "cluster_6": {
+      "size": 1562,
+      "examples": [
+        "Ravioli, NS as to filling, with cream sauce",
+        "Chicken a la king with rice, frozen meal",
+        "Crepe, filled with meat, poultry, or seafood, with sauce",
+        "Bread pudding made with evaporated milk and rum"
+      ]
+    },
+    "cluster_7": {
+      "size": 1373,
+      "examples": [
+        "Onions, from fresh, creamed",
+        "Leek soup, cream of, prepared with milk",
+        "Onions, cooked, from fresh, NS as to fat added in cooking",
+        "Onions, cooked, from fresh, fat added in cooking, NS as to type of fat"
+      ]
+    },
+    "cluster_8": {
+      "size": 51,
+      "examples": [
+        "Mackerel, pickled",
+        "Barracuda, baked or broiled, fat added in cooking",
+        "Barracuda, cooked, NS as to cooking method",
+        "Barracuda, steamed or poached"
+      ]
+    },
+    "cluster_9": {
+      "size": 221,
+      "examples": [
+        "Cereal (General Mills Cheerios Apple Cinnamon)",
+        "Cereal, frosted oat cereal with marshmallows",
+        "Cereal (General Mills Cheerios Oat Cluster Crunch)",
+        "Cereal (General Mills Cheerios Frosted)"
+      ]
+    },
+    "cluster_10": {
+      "size": 1992,
+      "examples": [
+        "Broccoli, cooked, from frozen, with mushroom sauce",
+        "Broccoli, cooked, NS as to form, with mushroom sauce",
+        "Peas, cooked, NS as to form, with mushroom sauce",
+        "Peas, cooked, from frozen, with mushroom sauce"
+      ]
+    }
+  },
+  "prototypes_k30_top8": {
+    "cluster_5": {
+      "size": 611,
+      "examples": [
+        "Milk, malted",
+        "Leek soup, cream of, prepared with milk",
+        "Pudding, rice flour, and nuts"
+      ]
+    },
+    "cluster_25": {
+      "size": 546,
+      "examples": [
+        "Beans, string, green, and potatoes, cooked, fat added in cooking, NS as to type of fat",
+        "Beans, string, green, and potatoes, cooked, NS as to fat added in cooking",
+        "Beans, lima, immature, cooked, from canned, with mushroom sauce"
+      ]
+    },
+    "cluster_1": {
+      "size": 527,
+      "examples": [
+        "Onions, green, cooked, NS as to form, NS as to fat added in cooking",
+        "Onions, green, cooked, from fresh, NS as to fat added in cooking",
+        "Onions, green, cooked, NS as to form, fat added in cooking"
+      ]
+    },
+    "cluster_13": {
+      "size": 525,
+      "examples": [
+        "Egg and ham on biscuit",
+        "Sausage and french toast, frozen meal",
+        "Pancakes and sausage, frozen meal"
+      ]
+    },
+    "cluster_17": {
+      "size": 524,
+      "examples": [
+        "Vegetable combination, excluding carrots, broccoli, and dark-green leafy; cooked, no sauce, fat added in cooking, NS as to type of fat",
+        "Vegetable combination, excluding carrots, broccoli, and dark-green leafy; cooked, no sauce, NS as to fat added in cooking",
+        "Vegetable combination, excluding carrots, broccoli, and dark-green leafy; cooked, no sauce, made with margarine"
+      ]
+    },
+    "cluster_7": {
+      "size": 467,
+      "examples": [
+        "Soft taco with meat, beans, and sour cream",
+        "Cheeseburger, 1 small patty, with condiments, on whole wheat bun",
+        "Cheeseburger, 1 small patty, with condiments, on wheat bun"
+      ]
+    },
+    "cluster_14": {
+      "size": 458,
+      "examples": [
+        "Beef, noodles, and vegetables excluding carrots, broccoli, and dark-green leafy; mushroom sauce",
+        "Beef, dumplings, and vegetables excluding carrots, broccoli, and dark-green leafy; gravy",
+        "Chicken or turkey, noodles, and vegetables excluding carrots, broccoli, and/or dark-green leafy; cream sauce, white sauce, or mushroom sauce"
+      ]
+    },
+    "cluster_26": {
+      "size": 455,
+      "examples": [
+        "Spaghetti with meat sauce, diet frozen meal",
+        "Spaghetti and meatballs dinner, NFS, frozen meal",
+        "Chicken and vegetable entree with noodles, frozen meal"
+      ]
+    }
+  },
+  "runtime_seconds": 45.92
+}

@@ -1,0 +1,12 @@
+# 原始超大表不上传至 GitHub（仅保留清洗脚本与说明；fndds_clean.csv 可按需保留或本地复现）
+data/nutrition/food.csv
+data/nutrition/food_nutrient.csv
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+.DS_Store
+Thumbs.db
