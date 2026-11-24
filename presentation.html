@@ -3,29 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Veridical Data Science 第7章：聚类分析与PCS稳健性审查</title>
+  <title>聚类分析：数学原理、评估体系与 PCS 稳健性框架</title>
   <style>
     :root {
       --bg: #ffffff;
       --bg-soft: #f8fafc;
-      --bg-card: #ffffff;
       --border: #e2e8f0;
       --border-strong: #cbd5e1;
       --text: #0f172a;
-      --text-secondary: #475569;
+      --text-secondary: #334155;
       --text-muted: #64748b;
-      --primary: #1d4ed8;
+      --primary: #1e40af;
       --primary-light: #eff6ff;
       --teal: #0f766e;
       --teal-light: #f0fdfa;
-      --amber: #b45309;
-      --amber-light: #fffbeb;
-      --red: #be123c;
-      --red-light: #fff1f2;
-      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
-      --shadow-md: 0 6px 24px rgba(15, 23, 42, 0.08);
-      --radius: 12px;
-      --notes-width: 360px;
+      --slate-light: #f1f5f9;
+      --accent-red: #9f1239;
+      --accent-red-light: #fff1f2;
+      --shadow-md: 0 8px 28px rgba(15, 23, 42, 0.07);
+      --radius: 10px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,51 +36,42 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* 顶部进度条 */
+    /* 顶部极简进度条 */
     .progress-bar-wrap {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      height: 4px;
+      height: 3px;
       background: #e2e8f0;
       z-index: 100;
     }
     .progress-bar {
       height: 100%;
-      background: linear-gradient(90deg, var(--primary), var(--teal));
+      background: var(--primary);
       width: 5.5%;
-      transition: width 0.28s ease;
+      transition: width 0.25s ease;
     }
 
-    /* 主容器 */
-    .app-shell {
-      display: flex;
-      height: calc(100vh - 52px);
-      width: 100vw;
-      padding-top: 4px;
-    }
-
-    /* 幻灯片舞台 */
+    /* 舞台容器 */
     .stage-wrap {
-      flex: 1;
+      height: calc(100vh - 48px);
+      width: 100vw;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 18px 24px;
-      overflow: hidden;
-      background: #f1f5f9;
-      transition: all 0.25s ease;
+      padding: 18px 28px;
+      padding-top: 20px;
     }
 
     .slide-frame {
       width: 100%;
-      max-width: 1220px;
+      max-width: 1280px;
       height: 100%;
-      max-height: 740px;
+      max-height: 750px;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 12px;
       box-shadow: var(--shadow-md);
       position: relative;
       overflow: hidden;
@@ -97,53 +84,37 @@
       flex-direction: column;
       height: 100%;
       width: 100%;
-      padding: 34px 44px 28px;
+      padding: 36px 50px 28px;
       overflow-y: auto;
-      animation: fadeIn 0.22s ease;
+      animation: fadeIn 0.2s ease;
     }
     .slide.active { display: flex; }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* 页眉 */
+    /* 页眉（无时长标签） */
     .slide-header {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      border-bottom: 2px solid #f1f5f9;
+      border-bottom: 1.5px solid #e2e8f0;
       padding-bottom: 12px;
       margin-bottom: 18px;
       flex-shrink: 0;
     }
-    .slide-kicker {
+    .slide-section {
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.06em;
       color: var(--primary);
-      background: var(--primary-light);
-      padding: 3px 10px;
-      border-radius: 999px;
-      margin-bottom: 6px;
-      display: inline-block;
+      text-transform: uppercase;
+      margin-bottom: 4px;
     }
     .slide-title {
       font-size: 25px;
       font-weight: 700;
       color: var(--text);
       line-height: 1.28;
-    }
-    .slide-time-tag {
-      font-size: 12px;
-      color: var(--text-muted);
-      background: var(--bg-soft);
-      border: 1px solid var(--border);
-      padding: 4px 10px;
-      border-radius: 999px;
-      white-space: nowrap;
-      margin-left: 16px;
     }
 
     .slide-body {
@@ -154,95 +125,81 @@
       min-height: 0;
     }
 
-    /* 封面页专属 */
+    /* 封面页 */
     .cover-slide {
       justify-content: center;
       align-items: flex-start;
+      padding: 60px 76px;
       background:
-        radial-gradient(circle at 92% 14%, rgba(29, 78, 216, 0.06) 0%, transparent 38%),
-        radial-gradient(circle at 85% 88%, rgba(15, 118, 110, 0.06) 0%, transparent 36%),
+        radial-gradient(circle at 90% 15%, rgba(30, 64, 175, 0.045) 0%, transparent 40%),
         #ffffff;
-      padding: 56px 68px;
     }
-    .cover-badge {
+    .cover-tag {
       font-size: 13px;
       font-weight: 700;
       color: var(--primary);
-      background: var(--primary-light);
       border: 1px solid #bfdbfe;
-      padding: 6px 14px;
-      border-radius: 999px;
-      margin-bottom: 22px;
+      background: var(--primary-light);
+      padding: 5px 14px;
+      border-radius: 6px;
+      margin-bottom: 24px;
     }
     .cover-title {
       font-size: 40px;
       font-weight: 800;
-      line-height: 1.25;
+      line-height: 1.28;
       color: var(--text);
-      margin-bottom: 14px;
-      max-width: 920px;
+      margin-bottom: 16px;
+      max-width: 960px;
     }
     .cover-title span { color: var(--primary); }
     .cover-subtitle {
-      font-size: 19px;
+      font-size: 18.5px;
       color: var(--text-secondary);
-      line-height: 1.6;
-      max-width: 820px;
-      margin-bottom: 34px;
+      line-height: 1.65;
+      max-width: 860px;
+      margin-bottom: 38px;
     }
     .cover-meta {
       display: grid;
-      grid-template-columns: repeat(3, minmax(180px, auto));
-      gap: 16px 28px;
+      grid-template-columns: repeat(3, minmax(200px, auto));
+      gap: 16px 32px;
       padding-top: 22px;
       border-top: 1px solid var(--border);
       width: 100%;
-      max-width: 860px;
+      max-width: 920px;
     }
-    .meta-item .meta-label {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-    }
-    .meta-item .meta-val {
-      font-size: 14.5px;
-      font-weight: 600;
-      color: var(--text);
-    }
+    .meta-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .meta-val { font-size: 14.5px; font-weight: 600; color: var(--text); }
 
-    /* 布局网格 */
+    /* 网格 */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: stretch; }
     .grid-2-wide { display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; align-items: stretch; }
     .grid-2-right { display: grid; grid-template-columns: 1fr 1.35fr; gap: 18px; align-items: stretch; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 
-    /* 卡片 */
+    /* 学术卡片 */
     .card {
       background: var(--bg-soft);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px 18px;
+      padding: 15px 18px;
     }
     .card.white { background: #ffffff; }
     .card.blue { background: var(--primary-light); border-color: #bfdbfe; }
     .card.teal { background: var(--teal-light); border-color: #99f6e4; }
-    .card.amber { background: var(--amber-light); border-color: #fde68a; }
-    .card.red { background: var(--red-light); border-color: #fecdd3; }
+    .card.red { background: var(--accent-red-light); border-color: #fecdd3; }
 
     .card-title {
       font-size: 15.5px;
       font-weight: 700;
       color: var(--text);
       margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
     .card.blue .card-title { color: var(--primary); }
     .card.teal .card-title { color: var(--teal); }
-    .card.amber .card-title { color: var(--amber); }
-    .card.red .card-title { color: var(--red); }
+    .card.red .card-title { color: var(--accent-red); }
 
     p, li {
       font-size: 14.5px;
@@ -253,14 +210,22 @@
     li { margin-bottom: 6px; }
     li:last-child { margin-bottom: 0; }
     strong { color: var(--text); }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      background: #f1f5f9;
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #0f172a;
+    }
 
-    /* 公式块 */
+    /* 数学公式与伪代码 */
     .formula-box {
       background: #ffffff;
       border: 1px solid var(--border-strong);
-      border-left: 4px solid var(--primary);
-      border-radius: 8px;
-      padding: 11px 16px;
+      border-left: 3.5px solid var(--primary);
+      border-radius: 6px;
+      padding: 10px 16px;
       font-family: "Cambria Math", "Times New Roman", Georgia, serif;
       font-size: 16px;
       color: var(--text);
@@ -278,6 +243,24 @@
     .frac .num { border-bottom: 1px solid #0f172a; padding: 0 4px 1px; }
     .frac .den { padding: 1px 4px 0; }
 
+    .algo-box {
+      background: #ffffff;
+      border: 1px solid var(--border-strong);
+      border-top: 3px solid var(--text);
+      border-bottom: 2px solid var(--text);
+      border-radius: 4px;
+      padding: 12px 16px;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .algo-title {
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
     /* 图片容器 */
     .fig-card {
       background: #ffffff;
@@ -294,16 +277,15 @@
     }
     .fig-card:hover {
       border-color: var(--primary);
-      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.1);
+      box-shadow: 0 4px 14px rgba(30, 64, 175, 0.1);
     }
     .fig-card img {
       max-width: 100%;
-      max-height: 360px;
+      max-height: 355px;
       object-fit: contain;
-      border-radius: 6px;
+      border-radius: 4px;
     }
     .fig-card.tall img { max-height: 410px; }
-    .fig-card.compact img { max-height: 255px; }
     .fig-caption {
       margin-top: 6px;
       font-size: 12px;
@@ -311,131 +293,51 @@
       text-align: center;
     }
 
-    /* 表格 */
+    /* 学术三线表风格 */
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13.5px;
       background: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--border);
+      border-top: 2px solid var(--text);
+      border-bottom: 2px solid var(--text);
     }
     th, td {
       padding: 8px 11px;
       border-bottom: 1px solid var(--border);
       text-align: left;
-      line-height: 1.45;
+      line-height: 1.48;
     }
     th {
       background: var(--bg-soft);
       font-weight: 700;
       color: var(--text);
+      border-bottom: 1.5px solid var(--border-strong);
     }
     tr:last-child td { border-bottom: none; }
     .num-col { text-align: center; font-variant-numeric: tabular-nums; }
     .hl-good { color: var(--teal); font-weight: 700; }
-    .hl-bad { color: var(--red); font-weight: 700; }
+    .hl-bad { color: var(--accent-red); font-weight: 700; }
     .hl-blue { color: var(--primary); font-weight: 700; }
 
-    /* KPI 数字块 */
-    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .kpi {
-      background: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      text-align: center;
-    }
-    .kpi-val { font-size: 24px; font-weight: 800; color: var(--primary); line-height: 1.2; }
-    .kpi-val.red { color: var(--red); }
-    .kpi-val.teal { color: var(--teal); }
-    .kpi-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-
-    /* 讲稿侧边栏 */
-    .notes-panel {
-      width: var(--notes-width);
-      background: #ffffff;
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      transition: width 0.25s ease, opacity 0.2s ease;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .notes-panel.hidden {
-      width: 0;
-      border-left: none;
-      opacity: 0;
-    }
-    .notes-header {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-soft);
-    }
-    .notes-header h3 {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .notes-duration {
-      font-size: 12px;
-      color: var(--primary);
-      background: var(--primary-light);
-      padding: 2px 9px;
-      border-radius: 999px;
-      font-weight: 600;
-    }
-    .notes-content {
-      flex: 1;
-      padding: 18px 20px;
-      overflow-y: auto;
-      font-size: 14.5px;
-      line-height: 1.85;
-      color: #1e293b;
-    }
-    .notes-content p {
-      font-size: 14.5px;
-      line-height: 1.85;
-      color: #1e293b;
-      margin-bottom: 12px;
-    }
-    .notes-tip {
-      margin-top: 10px;
-      padding: 10px 12px;
-      background: var(--amber-light);
-      border: 1px solid #fde68a;
-      border-radius: 8px;
-      font-size: 13px;
-      color: #92400e;
-      line-height: 1.6;
-    }
-
-    /* 底部控制栏 */
+    /* 底部极简控制栏 */
     .toolbar {
-      height: 52px;
+      height: 48px;
       background: #ffffff;
       border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 22px;
+      padding: 0 24px;
       flex-shrink: 0;
     }
-    .toolbar-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .toolbar-group { display: flex; align-items: center; gap: 8px; }
     .btn {
       background: #ffffff;
       border: 1px solid var(--border-strong);
       color: var(--text);
-      padding: 6px 13px;
-      border-radius: 8px;
+      padding: 5px 12px;
+      border-radius: 6px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
@@ -443,26 +345,22 @@
       font-family: inherit;
     }
     .btn:hover { background: var(--bg-soft); border-color: var(--primary); color: var(--primary); }
-    .btn.active { background: var(--primary); border-color: var(--primary); color: #ffffff; }
     .page-indicator {
       font-size: 13.5px;
       font-weight: 700;
       color: var(--text-secondary);
-      min-width: 68px;
+      min-width: 64px;
       text-align: center;
       font-variant-numeric: tabular-nums;
     }
-    .shortcut-hint {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
+    .shortcut-hint { font-size: 12px; color: var(--text-muted); }
 
     /* 图片放大 Lightbox */
     .lightbox {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.82);
+      background: rgba(15, 23, 42, 0.84);
       z-index: 300;
       align-items: center;
       justify-content: center;
@@ -475,18 +373,17 @@
       max-height: 90vh;
       background: #ffffff;
       padding: 12px;
-      border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      border-radius: 8px;
     }
 
-    /* 总览网格 */
+    /* 目录弹窗 */
     .overview-modal {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(248, 250, 252, 0.96);
+      background: rgba(248, 250, 252, 0.97);
       z-index: 250;
-      padding: 30px 44px;
+      padding: 32px 48px;
       overflow-y: auto;
     }
     .overview-modal.open { display: block; }
@@ -498,32 +395,30 @@
     }
     .overview-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 14px;
     }
     .overview-item {
       background: #ffffff;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       padding: 14px;
       cursor: pointer;
       transition: all 0.15s;
     }
     .overview-item:hover, .overview-item.current {
       border-color: var(--primary);
-      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.12);
+      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.1);
     }
     .overview-num { font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-    .overview-title { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.4; }
+    .overview-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; }
 
-    /* 打印导出 PDF 友好样式 */
     @media print {
       body, html { overflow: visible; background: #ffffff; }
-      .progress-bar-wrap, .notes-panel, .toolbar, .lightbox, .overview-modal { display: none !important; }
-      .app-shell { display: block; height: auto; }
-      .stage-wrap { display: block; padding: 0; background: #ffffff; }
+      .progress-bar-wrap, .toolbar, .lightbox, .overview-modal { display: none !important; }
+      .stage-wrap { display: block; height: auto; padding: 0; }
       .slide-frame { max-width: none; max-height: none; border: none; box-shadow: none; }
-      .slide { display: flex !important; page-break-after: always; min-height: 95vh; border-bottom: 1px solid #e2e8f0; }
+      .slide { display: flex !important; page-break-after: always; min-height: 95vh; }
     }
   </style>
 </head>
@@ -531,783 +426,636 @@
 
 <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
 
-<div class="app-shell">
-  <div class="stage-wrap">
-    <div class="slide-frame" id="slideFrame">
+<div class="stage-wrap">
+  <div class="slide-frame">
 
-      <!-- ==================== SLIDE 1 ==================== -->
-      <section class="slide cover-slide active" data-title="封面：Veridical Data Science 聚类分析" data-time="1 分钟">
-        <div class="cover-badge">数学建模课程汇报 · Veridical Data Science (Chapter 7)</div>
-        <h1 class="cover-title">从“跑通算法”到<span>“可信建模”</span><br/>可信数据科学视角下的聚类分析</h1>
-        <p class="cover-subtitle">
-          基于 Bin Yu &amp; Rebecca L. Barter《Veridical Data Science》第 7 章理论解析，<br/>
-          结合 <strong>USDA FNDDS 食物营养（8,690×57）</strong> 与 <strong>UCI Wine（178×13）</strong> 双数据集完整复现
-        </p>
-        <div class="cover-meta">
-          <div class="meta-item">
-            <div class="meta-label">参考原著</div>
-            <div class="meta-val">Veridical Data Science (MIT Press, 2024)</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">核心方法论</div>
-            <div class="meta-val">PCS 框架（可预测性 · 可计算性 · 稳定性）</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">开源复现代码</div>
-            <div class="meta-val">github.com/Alrediph/clustering</div>
-          </div>
+    <!-- ==================== SLIDE 1 ==================== -->
+    <section class="slide cover-slide active" data-title="封面：聚类分析的数学原理与 PCS 稳健性框架">
+      <div class="cover-tag">数学建模课程报告 · Veridical Data Science (Chapter 7)</div>
+      <h1 class="cover-title">聚类分析（Clustering）<br/><span>数学原理、评估体系与 PCS 稳健性框架</span></h1>
+      <p class="cover-subtitle">
+        基于 Bin Yu &amp; Rebecca L. Barter《Veridical Data Science》第 7 章，<br/>
+        系统阐述无监督聚类的优化建模、高维表征、模型选择与扰动稳定性验证
+      </p>
+      <div class="cover-meta">
+        <div class="meta-item">
+          <div class="meta-label">核心文献</div>
+          <div class="meta-val">Veridical Data Science (MIT Press, 2024)</div>
         </div>
-        <div class="slide-notes" hidden>
-          <p>各位老师、同学大家好！今天我汇报的主题是《可信数据科学》（Veridical Data Science）第七章——聚类分析。</p>
-          <p>大家在数学建模中肯定都用过 K-Means 或层次聚类，但平时我们往往“跑完代码、画张散点图”就结束了。而 UC Berkeley 郁彬（Bin Yu）教授和 Rebecca Barter 这本书最大的魅力在于：它用一套严谨的 <strong>PCS（可预测性、可计算性、稳定性）框架</strong>，回答了一个核心问题——没有标准答案时，怎么证明聚出来的类不是算法随机性凑出来的假象？</p>
-          <p>今天大概用 25 分钟，我将结合原书理论，以及我亲手复现的<strong>书上原版 USDA 8,690 种食物营养数据</strong>和<strong>UCI 葡萄酒数据</strong>两套完整实验，带大家走一遍从“跑通算法”到“可信建模”的全流程。</p>
+        <div class="meta-item">
+          <div class="meta-label">方法论主线</div>
+          <div class="meta-val">算法优化 · 定量评估 · PCS 审查框架</div>
         </div>
-      </section>
+        <div class="meta-item">
+          <div class="meta-label">实证验证数据</div>
+          <div class="meta-val">USDA FNDDS 营养数据 &amp; UCI Wine</div>
+        </div>
+      </div>
+    </section>
 
-      <!-- ==================== SLIDE 2 ==================== -->
-      <section class="slide" data-title="Part 1：无监督聚类的困境与问题驱动" data-time="1 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 1 · 引言与问题驱动</div>
-            <h2 class="slide-title">为什么聚类在数学建模中常常变成“玄学”？</h2>
+    <!-- ==================== SLIDE 2 ==================== -->
+    <section class="slide" data-title="1.1 聚类问题的数学形式化与核心挑战">
+      <div class="slide-header">
+        <div class="slide-section">一、问题形式化与方法论背景（7.1）</div>
+        <h2 class="slide-title">聚类分析的数学定义与无监督学习的核心挑战</h2>
+      </div>
+      <div class="slide-body">
+        <div class="card white">
+          <div class="card-title">数学形式化定义（集合划分问题）</div>
+          <p>给定观测样本集 <em>X</em> = {<b>x</b><sub>1</sub>, <b>x</b><sub>2</sub>, &hellip;, <b>x</b><sub>n</sub>} &sub; &#8477;<sup>d</sup>，在<strong>缺乏真实类别标签</strong>的条件下，寻找一个 <em>K</em> 划分 &#119966; = {<em>C</em><sub>1</sub>, &hellip;, <em>C</em><sub>K</sub>}，满足：</p>
+          <div class="formula-box">
+            &cup;<sub>k=1..K</sub> <em>C</em><sub>k</sub> = <em>X</em>, &emsp; <em>C</em><sub>k</sub> &cap; <em>C</em><sub>l</sub> = &empty; (&forall; <em>k</em> &ne; <em>l</em>), &emsp; <em>C</em><sub>k</sub> &ne; &empty;
           </div>
-          <div class="slide-time-tag">建议用时 1 min</div>
+          <p>使得<strong>簇内样本高度同质</strong>，同时<strong>簇间样本显著异质</strong>。</p>
         </div>
-        <div class="slide-body">
-          <div class="card blue">
-            <div class="card-title">一个贯穿全章的真实问题（USDA FNDDS 食物营养数据库）</div>
-            <p>给你 <strong>8,690 种食物</strong> 的 <strong>57 项营养成分</strong>（蛋白质、脂肪、碳水、钠、维生素等），在<strong>没有任何人工标签</strong>的前提下，能否让数据自己“说出”哪些食物在营养结构上最相似？传统的“谷物/蔬果/肉奶”划分是唯一合理的吗？</p>
+        <div class="grid-3" style="flex:1;">
+          <div class="card">
+            <div class="card-title">挑战 1：评估基准缺失</div>
+            <p>由于不存在先验的 Ground Truth，无法像监督学习那样直接计算泛化误差或分类准确率，聚类质量的度量高度依赖几何假设。</p>
           </div>
-          <div class="grid-3" style="flex:1;">
-            <div class="card white">
-              <div class="card-title">困境 1：没有标准答案</div>
-              <p>聚类属于<strong>无监督学习</strong>，没有 Ground Truth 用来直接算准确率，很难客观评判谁分得“更对”。</p>
-            </div>
-            <div class="card white">
-              <div class="card-title">困境 2：人为选择极度敏感</div>
-              <p>是否做标准化？是否取对数？选欧氏距离还是曼哈顿距离？换个随机种子，聚类结果可能面目全非。</p>
-            </div>
-            <div class="card white">
-              <div class="card-title">困境 3：簇数 K 难定</div>
-              <p>分成 3 类还是 10 类还是 30 类？肘部法则往往拐点模糊，拍脑袋定 K 在数模答辩中极易被质疑。</p>
-            </div>
+          <div class="card">
+            <div class="card-title">挑战 2：建模判断敏感性</div>
+            <p>聚类结果对数据预处理（标准化、非线性变换）、距离度量、算法范式及随机初始化等<strong>人为判断选择（Judgment Calls）</strong>高度敏感。</p>
           </div>
-          <div class="card amber">
-            <strong>核心追问：</strong>如何把“主观探索”升级为<strong>可复现、经得起扰动检验的科学建模流程</strong>？
+          <div class="card">
+            <div class="card-title">挑战 3：超参数 K 的不可辨识性</div>
+            <p>簇数 <em>K</em> 未知；常见内部目标函数（如 WCSS）随 <em>K</em> 单调递减，易陷入过拟合或主观经验决策。</p>
           </div>
         </div>
-        <div class="slide-notes" hidden>
-          <p>我们先从一个非常直观的问题切入：原书第 7 章贯穿始终的案例是美国农业部的食物营养数据库——包含 8,690 种食物和 57 项营养指标。平时我们靠经验把食物分成蔬菜、谷物、肉类，但如果完全不看标签，只看营养成分表，机器能自动发现什么样的食物大类？</p>
-          <p>这就是无监督聚类。但做过数模的同学都知道，聚类特别容易变成“玄学”，主要有三大困境：第一，没有标准答案；第二，对数据预处理、距离定义、算法和随机种子极度敏感；第三，到底分几类（选 K）经常只能凭感觉看“肘部”。</p>
-          <p>那么，怎么解决这些痛点呢？这就引出了本书最核心的方法论——PCS 框架。</p>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- ==================== SLIDE 3 ==================== -->
-      <section class="slide" data-title="Part 1：PCS 可信数据科学框架" data-time="1.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 1 · 核心哲学</div>
-            <h2 class="slide-title">破局之道：PCS 可信数据科学框架（Yu &amp; Kumbier, PNAS 2020）</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 1.5 min</div>
+    <!-- ==================== SLIDE 3 ==================== -->
+    <section class="slide" data-title="1.2 可信聚类标准与 PCS 框架">
+      <div class="slide-header">
+        <div class="slide-section">一、问题形式化与方法论背景（7.1.1）</div>
+        <h2 class="slide-title">可信聚类的四维准则与 PCS 数据科学框架</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card white"><div class="card-title">1. 紧密性</div><p>Tightness：同簇观测样本在特征空间内高度聚集。</p></div>
+          <div class="card white"><div class="card-title">2. 区分度</div><p>Distinctness：不同簇之间存在可辨识的几何间隔。</p></div>
+          <div class="card blue"><div class="card-title">3. 可预测性</div><p>Predictability：簇结构在外部或留出样本上可重现。</p></div>
+          <div class="card teal"><div class="card-title">4. 稳定性</div><p>Stability：对合理的数据与建模扰动保持鲁棒。</p></div>
         </div>
-        <div class="slide-body">
-          <p><em>Veridical</em> 意为“真实的、符合客观现实的”。PCS 框架将机器学习的预测思维与统计学的稳健思维融合到数据科学全生命周期（DSLC）中：</p>
-          <div class="grid-3" style="flex:1;">
+        <div class="card white" style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:12px;">
+          <div class="card-title">PCS 框架（Predictability · Computability · Stability，Yu &amp; Kumbier, PNAS 2020）</div>
+          <div class="grid-3">
             <div class="card blue">
-              <div class="card-title">P · Predictability（可预测性）</div>
-              <p><strong>现实检验（Reality Check）</strong></p>
-              <ul style="margin-top:8px;">
-                <li>发现的聚类结构，在<strong>未见过的留出数据</strong>上能否稳定重现？</li>
-                <li>落脚点：用<strong>无监督 V 折交叉验证</strong>评估簇结构的泛化能力。</li>
-              </ul>
+              <div class="card-title">P · 可预测性（现实检验）</div>
+              <p>以样本外泛化表现检验聚类结构是否反映真实信号。在无监督聚类中，通过<strong>伪验证集投影与交叉验证</strong>实现。</p>
             </div>
             <div class="card teal">
-              <div class="card-title">C · Computability（可计算性）</div>
-              <p><strong>工程可扩展性</strong></p>
-              <ul style="margin-top:8px;">
-                <li>在真实数据规模下，算法的时间与空间复杂度是否可承受？</li>
-                <li>落脚点：层次聚类 <em>O(n²)–O(n³)</em> 与 K-Means <em>O(nKdt)</em> 的权衡。</li>
-              </ul>
+              <div class="card-title">C · 可计算性（算法约束）</div>
+              <p>综合考量时间复杂度、内存开销与收敛代价，在统计性质与工程可扩展性之间进行显式权衡。</p>
             </div>
-            <div class="card amber">
-              <div class="card-title">S · Stability（稳定性）★</div>
-              <p><strong>全流程扰动检验（核心灵魂）</strong></p>
-              <ul style="margin-top:8px;">
-                <li>不仅看抽样误差，更检验<strong>人为判断选择（Judgment Calls）</strong>：预处理、算法、初始化、特征删减。</li>
-                <li>落脚点：用 <strong>ARI 矩阵与子采样分布</strong>量化稳健性。</li>
-              </ul>
+            <div class="card">
+              <div class="card-title">S · 稳定性（全流程不确定性）</div>
+              <p>将传统抽样不确定性扩展至<strong>数据科学全生命周期</strong>：系统性扰动数据、预处理与算法选择，检验结论一致性。</p>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 4 ==================== -->
+    <section class="slide" data-title="2.1 相似度度量空间与尺度不变性理论">
+      <div class="slide-header">
+        <div class="slide-section">二、相似度度量与预处理理论（7.1 &amp; 7.3）</div>
+        <h2 class="slide-title">距离度量空间、尺度敏感性与方差稳定变换</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card white">
+            <div class="card-title">常用闵可夫斯基距离族（Minkowski / L<sub>p</sub> 范数）</div>
+            <div class="formula-box">
+              <i>d</i><sub>p</sub>(<b>x</b><sub>i</sub>, <b>x</b><sub>j</sub>) = ( &Sigma;<sub>m=1..d</sub> | <i>x</i><sub>im</sub> &minus; <i>x</i><sub>jm</sub> |<sup>p</sup> )<sup>1/p</sup>
+            </div>
+            <ul>
+              <li><strong>欧氏距离（<em>p</em> = 2）</strong>：旋转不变，K-Means 默认度量；平方项放大极端偏差。</li>
+              <li><strong>曼哈顿距离（<em>p</em> = 1）</strong>：对离群值更具鲁棒性，适用于高维稀疏特征。</li>
+              <li><strong>相关性 / 余弦距离</strong>：关注特征向量方向而非绝对幅值，适用于基因表达谱或文本向量。</li>
+            </ul>
           </div>
           <div class="card white">
-            <strong>汇报主线：</strong>接下来我们沿着 <strong>基础算法（7.1–7.3） → 高维可视化与评估（7.4–7.6） → 交叉验证选 K 与 PCS 审查（7.7–7.9）</strong> 展开，全程穿插 <strong>UCI Wine</strong> 与 <strong>USDA FNDDS</strong> 实测数据。
+            <div class="card-title">距离度量的两大理论敏感性</div>
+            <ul>
+              <li><strong>非尺度不变性（Scale Sensitivity）</strong>：若第 <em>m</em> 维特征尺度放大 <em>c</em> 倍，其在欧氏平方距离中的权重将放大 <strong><em>c</em><sup>2</sup> 倍</strong>。因此量纲不统一时必须实施 <strong>Z-score 标准化</strong>：<em>z</em><sub>im</sub> = (<em>x</em><sub>im</sub> &minus; &mu;<sub>m</sub>) / &sigma;<sub>m</sub>。</li>
+              <li><strong>长尾偏态敏感性（Skewness Sensitivity）</strong>：对于正值重尾分布，仅做线性标准化仍无法压缩极端右尾，平方误差目标函数会被少数离群样本主导，导致其余样本发生<strong>非平衡坍缩</strong>。</li>
+              <li><strong>对数变换</strong>：<em>x'</em> = log<sub>10</sub>(<em>x</em> + 1) 可有效压缩数量级跨度、稳定方差并降低偏度。</li>
+            </ul>
           </div>
         </div>
-        <div class="slide-notes" hidden>
-          <p>郁彬教授和 Karl Kumbier 在 2020 年 PNAS 论文中正式提出了 PCS 框架，包含三大支柱：</p>
-          <p>第一是 <strong>P（可预测性）</strong>，它相当于“现实检验”——在聚类里，就是看我们在训练集上找到的簇，放到未见过的验证折上还能不能保持紧凑和分离；</p>
-          <p>第二是 <strong>C（可计算性）</strong>，关注算法在真实数据规模下的耗时和内存开销；</p>
-          <p>第三，也是本书最具特色的一点——<strong>S（稳定性）</strong>。传统统计学只关注随机抽样带来的方差，但 PCS 把稳定性扩展到了整个建模流程中的每一项<strong>人为判断（Judgment Calls）</strong>：比如要不要取对数、换一种聚类算法、删掉某个特征，结论还会成立吗？</p>
+        <div class="card blue">
+          <strong>方法论启示：</strong>预处理并非孤立的工程前处理步骤，它等价于<strong>重新定义样本空间的黎曼/欧氏度量结构</strong>，是聚类建模中影响权重最高的判断选择之一。
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- ==================== SLIDE 4 ==================== -->
-      <section class="slide" data-title="Part 2：好聚类标准与相似度度量" data-time="1.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 2 · 数学基础（7.1）</div>
-            <h2 class="slide-title">什么是“好”聚类？如何用数学刻画相似度？</h2>
+    <!-- ==================== SLIDE 5 ==================== -->
+    <section class="slide" data-title="2.2 层次聚类理论：凝聚过程与 Linkage 准则">
+      <div class="slide-header">
+        <div class="slide-section">三、经典聚类算法理论（7.2 层次聚类）</div>
+        <h2 class="slide-title">凝聚式层次聚类：树状图结构与四种 Linkage 数学定义</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2-wide">
+          <div class="algo-box">
+            <div class="algo-title">凝聚式层次聚类（Agglomerative Hierarchical Clustering）</div>
+            <ol>
+              <li><strong>初始化</strong>：将每个样本视为独立单点簇，共 <em>n</em> 个簇，计算两两距离矩阵 <b>D</b> &isin; &#8477;<sup>n&times;n</sup>。</li>
+              <li><strong>迭代合并</strong>：选取当前簇间距离 <em>D</em>(<em>A</em>, <em>B</em>) 最小的两个簇 <em>A, B</em> 合并为 <em>A</em> &cup; <em>B</em>，并更新距离矩阵。</li>
+              <li><strong>终止与切分</strong>：重复合并直至形成单一根簇，得到嵌套层次树（<strong>Dendrogram</strong>）；按目标高度水平截断即可获得任意簇数 <em>K</em>。</li>
+            </ol>
           </div>
-          <div class="slide-time-tag">建议用时 1.5 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="grid-4">
-            <div class="card white"><div class="card-title">1. 簇内紧密性</div><p>同簇样本彼此距离近（Tightness）</p></div>
-            <div class="card white"><div class="card-title">2. 簇间区分度</div><p>不同簇彼此分离清晰（Distinctness）</p></div>
-            <div class="card blue"><div class="card-title">3. 可预测性</div><p>在外部/留出数据上可复现（Predictability）</p></div>
-            <div class="card teal"><div class="card-title">4. 稳定性</div><p>抗数据与人为选择扰动（Stability）</p></div>
-          </div>
-          <div class="grid-2" style="flex:1;">
-            <div class="card white">
-              <div class="card-title">欧氏距离（L<sub>2</sub> Distance）</div>
-              <div class="formula-box">
-                <i>d</i><sub>2</sub>(<b>x</b><sub>i</sub>, <b>x</b><sub>j</sub>) = &radic;[ &Sigma;<sub>p=1..d</sub> (<i>x</i><sub>ip</sub> &minus; <i>x</i><sub>jp</sub>)<sup>2</sup> ]
-              </div>
-              <ul>
-                <li>最经典的几何直线距离，K-Means 默认度量。</li>
-                <li>由于存在平方项，对<strong>大尺度特征和极端离群值</strong>非常敏感。</li>
-              </ul>
-            </div>
-            <div class="card white">
-              <div class="card-title">曼哈顿距离（L<sub>1</sub> Distance）</div>
-              <div class="formula-box">
-                <i>d</i><sub>1</sub>(<b>x</b><sub>i</sub>, <b>x</b><sub>j</sub>) = &Sigma;<sub>p=1..d</sub> | <i>x</i><sub>ip</sub> &minus; <i>x</i><sub>jp</sub> |
-              </div>
-              <ul>
-                <li>各维度绝对差之和（城市街区距离）。</li>
-                <li>相比欧氏距离，对极端异常值的敏感度更低，高维稀疏场景表现更稳健。</li>
-              </ul>
-            </div>
-          </div>
-          <div class="card red">
-            <strong>量纲预警：</strong>若特征 A 范围是 [0, 1000]（如钠含量 mg / 脯氨酸），特征 B 范围是 [0, 1]（如维生素 / 非黄酮酚），直接算距离时特征 A 将以<strong>百万倍权重</strong>碾压特征 B！
+          <div class="card white">
+            <div class="card-title">计算与结构性质</div>
+            <ul>
+              <li><strong>无需预指定 <em>K</em></strong>：一次运行完整呈现多尺度嵌套结构。</li>
+              <li><strong>贪心不可逆性</strong>：早期合并决策无法在后续步骤回溯修正。</li>
+              <li><strong>计算复杂度</strong>：空间 <em>O</em>(<em>n</em><sup>2</sup>)，时间 <em>O</em>(<em>n</em><sup>2</sup> log <em>n</em>) ~ <em>O</em>(<em>n</em><sup>3</sup>)，受限于样本规模 <em>n</em>。</li>
+            </ul>
           </div>
         </div>
-        <div class="slide-notes" hidden>
-          <p>进入第二部分，我们先夯实数学基础。第 7.1 节把“好聚类”总结为四个标准：传统的<strong>紧密性</strong>和<strong>区分度</strong>，加上 PCS 赋予的<strong>可预测性</strong>和<strong>稳定性</strong>。</p>
-          <p>在数学上，“相似”由距离来刻画，最常用的是 L2 欧氏距离和 L1 曼哈顿距离。大家在写数模论文时一定要注意最下面这条红框预警：只要用了距离，就天然对量纲极度敏感！如果一个变量在千位量级，另一个在小数点后一位，不标准化的话，小量纲特征在距离公式里几乎等于零。这一点一会儿我们会在 UCI Wine 数据集上看到触目惊心的实测对比。</p>
-        </div>
-      </section>
+        <table>
+          <thead>
+            <tr><th style="width:20%;">Linkage 准则</th><th style="width:42%;">簇间距离数学定义 <em>D</em>(<em>A</em>, <em>B</em>)</th><th style="width:38%;">几何特性与理论优缺点</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Single（单连接）</strong></td><td>min<sub>x&isin;A, y&isin;B</sub> <em>d</em>(<b>x</b>, <b>y</b>)</td><td>可连接非凸细长结构，但极易产生<strong>链式效应（Chaining）</strong></td></tr>
+            <tr><td><strong>Complete（全连接）</strong></td><td>max<sub>x&isin;A, y&isin;B</sub> <em>d</em>(<b>x</b>, <b>y</b>)</td><td>倾向生成直径受控的紧凑球形簇，但对边缘离群点敏感</td></tr>
+            <tr><td><strong>Average（平均连接）</strong></td><td>(|<em>A</em>||<em>B</em>|)<sup>&minus;1</sup> &Sigma;<sub>x&isin;A</sub> &Sigma;<sub>y&isin;B</sub> <em>d</em>(<b>x</b>, <b>y</b>)</td><td>单连接与全连接的折中，对局部噪声具有一定缓冲作用</td></tr>
+            <tr><td><strong>Ward（离差平方和）</strong></td><td><span class="hl-blue">&Delta;WCSS(<em>A</em>, <em>B</em>) = [|<em>A</em>||<em>B</em>| / (|<em>A</em>|+|<em>B</em>|)] ‖<b>&mu;</b><sub>A</sub> &minus; <b>&mu;</b><sub>B</sub>‖<sub>2</sub><sup>2</sup></span></td><td>最小化合并导致的簇内总方差增量，通常产生最均衡、紧凑的划分</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-      <!-- ==================== SLIDE 5 ==================== -->
-      <section class="slide" data-title="Part 2：层次聚类与 Linkage 敏感性" data-time="2 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 2 · 经典算法（7.2）</div>
-            <h2 class="slide-title">层次聚类（Hierarchical）：树状图与四种 Linkage 实测</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 2 min</div>
+    <!-- ==================== SLIDE 6 ==================== -->
+    <section class="slide" data-title="2.3 K-Means 理论：组合优化与交替最小化">
+      <div class="slide-header">
+        <div class="slide-section">三、经典聚类算法理论（7.3 K-Means 聚类）</div>
+        <h2 class="slide-title">K-Means 的优化形式、收敛性证明与几何性质</h2>
+      </div>
+      <div class="slide-body">
+        <div class="formula-box" style="font-size:17.5px; padding:12px;">
+          min<sub>C<sub>1</sub>,&hellip;,C<sub>K</sub>,\; &mu;<sub>1</sub>,&hellip;,&mu;<sub>K</sub></sub> &nbsp;
+          <em>J</em>(&#119966;, <b>&mu;</b>) = &Sigma;<sub>k=1..K</sub> &Sigma;<sub>x<sub>i</sub> &isin; C<sub>k</sub></sub> ‖ <b>x</b><sub>i</sub> &minus; <b>&mu;</b><sub>k</sub> ‖<sub>2</sub><sup>2</sup>
         </div>
-        <div class="slide-body">
-          <div class="grid-2-right" style="flex:1; min-height:0;">
-            <div style="display:flex; flex-direction:column; gap:10px;">
-              <div class="card white">
-                <div class="card-title">凝聚式流程（无需先指定 K）</div>
-                <p>每个样本自成一簇 → 迭代合并距离最近的两簇 → 形成完整<strong>树状图（Dendrogram）</strong> → 按高度水平切分。</p>
-              </div>
-              <div class="card white" style="flex:1;">
-                <div class="card-title">核心人为选择：簇间距离（Linkage）</div>
-                <ul>
-                  <li><strong>Ward（离差平方和）</strong>：最小化合并后总方差增量，结果最均衡。</li>
-                  <li><strong>Complete（全连接）</strong>：两簇最远点距离，偏球形紧凑。</li>
-                  <li><strong>Average（平均连接）</strong>：两簇所有点对平均距离。</li>
-                  <li><strong>Single（单连接）</strong>：两簇最近点距离，极易出现<strong>链式效应</strong>。</li>
-                </ul>
-              </div>
-              <div class="card teal">
-                <strong>UCI Wine 实测（K=3）：</strong>Ward 划分均衡 <code>[58, 56, 64]</code>，与 K-Means 的 ARI 达 <strong>0.853</strong>；而 Single / Average 塌缩成 <code>[174, 3, 1]</code>，ARI 跌至 <strong>0</strong>！
-              </div>
-            </div>
-            <div class="fig-card tall" onclick="openLightbox(this)">
-              <img src="figures/wine_03_dendrogram_linkage.png" alt="UCI Wine 树状图与 Linkage 对比" />
-              <div class="fig-caption">图 1：UCI Wine 标准化数据上的 Ward 树状图与四种 Linkage 效果对比（点击放大）</div>
-            </div>
+        <div class="grid-2" style="flex:1;">
+          <div class="algo-box">
+            <div class="algo-title">Lloyd 交替最小化算法（坐标下降视角）</div>
+            <ol>
+              <li><strong>初始化</strong>：选取 <em>K</em> 个初始质心 {<b>&mu;</b><sub>k</sub><sup>(0)</sup>}；<strong>K-Means++</strong> 按 <em>P</em>(<b>x</b>) &prop; <em>D</em>(<b>x</b>)<sup>2</sup> 概率采样，降低落入劣质局部最优的风险。</li>
+              <li><strong>分配步（固定 <b>&mu;</b> 优化 &#119966;）</strong>：<br/>
+                <em>C</em><sub>k</sub><sup>(t)</sup> = { <b>x</b><sub>i</sub> : ‖<b>x</b><sub>i</sub> &minus; <b>&mu;</b><sub>k</sub><sup>(t)</sup>‖<sub>2</sub><sup>2</sup> &le; ‖<b>x</b><sub>i</sub> &minus; <b>&mu;</b><sub>j</sub><sup>(t)</sup>‖<sub>2</sub><sup>2</sup>, &forall; <em>j</em> }</li>
+              <li><strong>更新步（固定 &#119966; 优化 <b>&mu;</b>）</strong>：由一阶条件 &part;<em>J</em>/&part;<b>&mu;</b><sub>k</sub> = 0 得最优中心为簇均值 <b>&mu;</b><sub>k</sub><sup>(t+1)</sup> = |<em>C</em><sub>k</sub><sup>(t)</sup>|<sup>&minus;1</sup> &Sigma;<sub>x<sub>i</sub>&isin;C<sub>k</sub><sup>(t)</sup></sub> <b>x</b><sub>i</sub>。</li>
+              <li><strong>终止</strong>：直至划分不再变化。</li>
+            </ol>
+          </div>
+          <div class="card white">
+            <div class="card-title">理论性质与局限性分析</div>
+            <ul>
+              <li><strong>单调收敛定理</strong>：分配步与更新步均使目标函数 <em>J</em> 单调不增，且有限样本集的划分总数有限（不超过第二类 Stirling 数），故算法<strong>必在有限步内收敛</strong>。</li>
+              <li><strong>非凸性与局部最优</strong>：联合优化问题为 NP-hard，收敛解依赖初始化；实践中需多起点重复（如 <code>n_init=20</code>）取最小目标值解。</li>
+              <li><strong>Voronoi 几何假设</strong>：决策边界为质心间的线性中垂超平面（Voronoi 剖分），隐含各簇近似<strong>凸球形、等方差</strong>假设。</li>
+              <li><strong>计算复杂度</strong>：<em>O</em>(<em>n K d t</em>)，随样本量 <em>n</em> 线性扩展，显著优于层次聚类。</li>
+            </ul>
           </div>
         </div>
-        <div class="slide-notes" hidden>
-          <p>第一种经典算法是<strong>层次聚类</strong>。它最大的好处是不用一开始就猜 K，而是自底向上不断合并最相似的簇，生成一棵完整的树状图（Dendrogram），你想分几类就在对应高度横切一刀。</p>
-          <p>但层次聚类藏着一个极其关键的人为选择——<strong>Linkage 准则</strong>，也就是两个包含多个点的簇之间怎么算距离。大家看右边的实测图（这是我在 UCI Wine 标准化数据上跑出来的）：</p>
-          <p>左图是 Ward 法树状图，在高度 19 左右切一刀，非常干净地分成 3 个均衡大类 <code>[58, 56, 64]</code>，与 K-Means 的一致性 ARI 高达 <strong>0.853</strong>；但看右边的柱状图，如果换用 Single（单连接）甚至 Average（平均连接），因为几个离群点的存在产生了严重的“链式效应”，174 个样本全被粘进同一个簇，剩下 4 个点单独成簇，ARI 直接暴跌到 0！</p>
-          <p class="notes-tip">讲解技巧：可点击图片放大树状图，指一下红色虚线切分高度和右侧柱状图的巨大落差。</p>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- ==================== SLIDE 6 ==================== -->
-      <section class="slide" data-title="Part 2：K-Means 目标函数与交替优化" data-time="1.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 2 · 经典算法（7.3）</div>
-            <h2 class="slide-title">K-Means 聚类：组合优化视角与 Lloyd 交替迭代</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 1.5 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="formula-box" style="font-size:18px; padding:14px;">
-            min<sub>C<sub>1</sub>,...,C<sub>K</sub>, &mu;<sub>1</sub>,...,&mu;<sub>K</sub></sub> &nbsp;
-            &Sigma;<sub>k=1..K</sub> &Sigma;<sub>x<sub>i</sub> &isin; C<sub>k</sub></sub> ‖ <b>x</b><sub>i</sub> &minus; <b>&mu;</b><sub>k</sub> ‖<sub>2</sub><sup>2</sup>
-            &nbsp;&nbsp;<span style="font-family:sans-serif; font-size:13px; color:#64748b;">（最小化簇内平方和 WCSS）</span>
-          </div>
-          <div class="grid-2" style="flex:1;">
-            <div class="card white">
-              <div class="card-title">Lloyd 交替优化四步法</div>
-              <ol>
-                <li><strong>初始化</strong>：随机放置 <em>K</em> 个初始质心（推荐 <strong>K-Means++</strong> 让初始中心尽量分散）。</li>
-                <li><strong>分配步（固定 &mu;）</strong>：将每个样本归入欧氏距离最近的质心所在簇。</li>
-                <li><strong>更新步（固定 C）</strong>：以各簇内样本的均值重新计算新质心 &mu;<sub>k</sub>。</li>
-                <li><strong>收敛终止</strong>：重复第 2–3 步，直至所有样本归属不再变化。</li>
-              </ol>
-            </div>
-            <div class="card white">
-              <div class="card-title">数学性质与工程要点</div>
-              <ul>
-                <li><strong>必收敛但仅局部最优</strong>：每步迭代均使 WCSS 单调不增，但目标函数非凸（NP-hard），不同初始值可能落入不同局部极小值。</li>
-                <li><strong>工程对策</strong>：设置多次随机重启（如 <code>n_init=20</code>），保留 WCSS 最小解。</li>
-                <li><strong>几何隐含假设</strong>：默认使用欧氏距离与均值，隐含“各簇近似球形、方差相近、无极端长尾”的假设。</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>第二种主角算法是大家最熟悉的 <strong>K-Means</strong>。从数学建模的优化视角来看，它本质上是在求解一个组合优化问题：寻找 K 个划分和 K 个质心，使总簇内平方和 WCSS 最小。</p>
-          <p>直接求全局最优是 NP-hard 的，所以用经典的 Lloyd 交替优化：固定质心更新样本归属，再固定归属用均值更新质心。这两步每一步都严格让目标函数单调递减，所以必然在有限步内收敛，但因为非凸，只能保证局部最优——因此实践中必须多次随机初始化（比如 <code>n_init=20</code>）并配合 K-Means++。</p>
-          <p>更关键的是第三条：K-Means 用欧氏距离和算术均值，这就埋下了两个最容易翻车的建模坑点——<strong>量纲不统一</strong>和<strong>极端右偏分布</strong>。下面两页我们用实测数据直接看翻车现场！</p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 7 ==================== -->
-      <section class="slide" data-title="Part 2：建模坑点①——量纲陷阱（UCI Wine）" data-time="1.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 2 · 预处理实证 ①（UCI Wine）</div>
-            <h2 class="slide-title">建模坑点 ①：量纲相差 2,530 倍，不做标准化直接崩盘</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 1.5 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="kpi-row">
-            <div class="kpi">
-              <div class="kpi-val red">0.371</div>
-              <div class="kpi-label">未标准化 K-Means 对真实品种 ARI</div>
-            </div>
-            <div class="kpi">
-              <div class="kpi-val teal">0.897</div>
-              <div class="kpi-label">Z-score 标准化后 ARI（飙升 +0.526）</div>
-            </div>
-            <div class="kpi">
-              <div class="kpi-val">2,530×</div>
-              <div class="kpi-label">最大/最小特征标准差之比（脯氨酸 vs 非黄酮酚）</div>
-            </div>
-          </div>
-          <div class="fig-card tall" style="flex:1;" onclick="openLightbox(this)">
+    <!-- ==================== SLIDE 7 ==================== -->
+    <section class="slide" data-title="2.4 实证验证①：预处理与 Linkage 理论的实验检验">
+      <div class="slide-header">
+        <div class="slide-section">三、算法与预处理理论的实证检验</div>
+        <h2 class="slide-title">实证检验 ①：尺度变换、对数变换与 Linkage 敏感性</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2" style="flex:1; min-height:0;">
+          <div class="fig-card" onclick="openLightbox(this)">
             <img src="figures/wine_01_preprocessing_pca.png" alt="UCI Wine 预处理对比" />
-            <div class="fig-caption">图 2：UCI Wine 特征标准化前后 K-Means (K=3) 聚类结果与真实品种对照（PCA 二维投影，点击放大）</div>
+            <div class="fig-caption"><strong>尺度敏感性验证（UCI Wine, 178×13）</strong>：特征标准差相差 2,530 倍；标准化使 K-Means 与外部参考品种的 ARI 由 <strong>0.371</strong> 提升至 <strong>0.897</strong></div>
+          </div>
+          <div class="fig-card" onclick="openLightbox(this)">
+            <img src="figures/nutrition_01_log_vs_raw.png" alt="USDA FNDDS 对数变换对比" />
+            <div class="fig-caption"><strong>偏态敏感性验证（USDA FNDDS, 8,690×57）</strong>：偏度中位数 9.69；未取对数时 <strong>52.2%</strong> 样本坍缩至单簇，log<sub>10</sub>(x+1) 后降至 <strong>22.9%</strong>（K=30 时 7.0%）</div>
           </div>
         </div>
-        <div class="slide-notes" hidden>
-          <p>先看第一个坑点——<strong>量纲陷阱</strong>。UCI Wine 数据集有 178 个样本、13 项化学指标，其中“脯氨酸”的标准差是“非黄酮酚”的 <strong>2,530 倍</strong>。</p>
-          <p>看左图：如果不做标准化直接跑 K-Means，算法几乎完全只按脯氨酸高低切成了三段，在 13 维特征的 PCA 投影上完全混在一起，和真实葡萄酒品种的一致性 ARI 只有 <strong>0.371</strong>。</p>
-          <p>而仅仅加了一行 Z-score 标准化之后（看中图），三个簇瞬间与右边的真实品种高度吻合，ARI 从 0.371 一举飙升到 <strong>0.897</strong>！</p>
+        <div class="card white" style="padding:11px 16px;">
+          <strong>Linkage 敏感性补充验证（UCI Wine, 标准化, K=3）：</strong>
+          Ward 法产生均衡划分 <code>[58, 56, 64]</code>，与 K-Means 的一致性 ARI = <span class="hl-good">0.853</span>；Complete 法 ARI = 0.596；而 Single 与 Average 法均因局部离群点诱发链式效应，退化为 <code>[174, 3, 1]</code>（ARI &approx; <span class="hl-bad">0</span>）。
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- ==================== SLIDE 8 ==================== -->
-      <section class="slide" data-title="Part 2：建模坑点②——偏态塌缩（USDA FNDDS）" data-time="1.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 2 · 预处理实证 ②（复现原书 USDA FNDDS）</div>
-            <h2 class="slide-title">建模坑点 ②：仅标准化还不够！严重右偏导致 52.2% 食物塌缩</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 1.5 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="grid-2-right" style="flex:1; min-height:0;">
-            <div style="display:flex; flex-direction:column; gap:10px;">
-              <div class="card red">
-                <div class="card-title">未取对数（仅 Z-score 标准化）</div>
-                <ul>
-                  <li>57 项营养素原始偏度中位数高达 <strong>9.69</strong>（极端长尾）。</li>
-                  <li><strong>K=10 时：4,540 种食物（52.2%）塌缩进单个巨型簇</strong>，最小簇仅 4 种极端食物！</li>
-                  <li><strong>K=30 时</strong>：最大单簇仍占 <strong>41.6%</strong>，前 3 簇占 64.7%。</li>
-                </ul>
-              </div>
-              <div class="card teal">
-                <div class="card-title">对数变换 log<sub>10</sub>(x+1) + Z-score</div>
-                <ul>
-                  <li>偏度中位数骤降至 <strong>1.85</strong>。</li>
-                  <li><strong>K=10 最大单簇降至 22.9%</strong>；<strong>K=30 最大单簇仅 7.0%</strong>，结构彻底均衡。</li>
-                  <li>两种预处理的划分 ARI 仅 <strong>0.266</strong>（K=30 仅 <strong>0.171</strong>）。</li>
-                </ul>
-              </div>
-              <div class="card amber">
-                <strong>建模金句：</strong>在聚类中，<strong>特征变换与尺度选择往往比换算法本身影响更大</strong>！
-              </div>
-            </div>
-            <div class="fig-card tall" onclick="openLightbox(this)">
-              <img src="figures/nutrition_01_log_vs_raw.png" alt="USDA FNDDS 对数变换对比" />
-              <div class="fig-caption">图 3：USDA FNDDS (8,690×57) 未取对数 vs 对数变换 PCA 投影与簇大小分布（完美复现原书现象，点击放大）</div>
-            </div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>很多同学以为“做了 Z-score 标准化就万事大吉了”。但原书第 7 章用 8,690 种食物的营养数据狠狠打脸了这个直觉！</p>
-          <p>我严格按照书上的清洗逻辑复现了这个实验：食物营养素呈严重右偏分布，原始偏度中位数高达 <strong>9.69</strong>。看右边这张图左侧的橙色柱状图——即使已经做了 Z-score 标准化，只要<strong>不取对数</strong>，极端离群的几种调味品就会霸占小簇（最小簇只有 4 种食物），逼得 <strong>4,540 种食物（整整 52.2%，超过一半！）全部塌缩进同一个毫无区分度的巨型簇里</strong>！这与原书的描述分毫不差。</p>
-          <p>而在做了 <code>log10(x+1)</code> 对数变换压缩长尾后，看右侧蓝色柱状图，最大单簇占比从 52.2% 骤降到 22.9%（K=30 时更是降到 7.0%），真正的营养学结构才浮出水面。所以请记住一句话：<strong>特征变换往往比换算法本身影响更大</strong>。</p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 9 ==================== -->
-      <section class="slide" data-title="Part 3：高维聚类可视化三板斧" data-time="2 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 3 · 高维可视化（7.4）</div>
-            <h2 class="slide-title">特征超过三维看不见怎么办？高维聚类可视化三板斧</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 2 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="grid-3">
-            <div class="card white">
-              <div class="card-title">① 代表样本抽样（7.4.1）</div>
-              <p>从每个簇抽取离质心最近的<strong>原型样本（Prototypes）</strong>，用领域直觉检查“它们在现实中真的是一类吗？”</p>
-            </div>
-            <div class="card blue">
-              <div class="card-title">② 跨簇特征分布对比</div>
-              <p>绘制各簇在每个特征上的均值热力图、箱线图或雷达图，精准定位<strong>是谁区分了不同簇</strong>。</p>
-            </div>
-            <div class="card white">
-              <div class="card-title">③ 二维降维投影（PCA）</div>
-              <p>投影到前两个主成分着色观察分离度（<em>注意：2D 重叠不代表高维不可分，仅作辅助视图</em>）。</p>
-            </div>
-          </div>
-          <div class="fig-card" style="flex:1;" onclick="openLightbox(this)">
-            <img src="figures/wine_05_cluster_profiles.png" alt="UCI Wine 高维特征画像" />
-            <div class="fig-caption">图 4：UCI Wine 最终三类簇的 13 维化学特征画像热力图——簇1(清爽淡雅低酒精度) / 簇2(高色度高苹果酸低酚) / 簇3(高脯氨酸高类黄酮醇厚型)</div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>进入第三部分。实际建模都是十几维甚至几十维的数据，根本没法直接画散点图。第 7.4 节给出了高维聚类可视化的“三板斧”：</p>
-          <p>第一是<strong>原型抽样</strong>，挑出每个簇离质心最近的几个真实样本用人眼验货；第二是<strong>跨簇特征分布对比</strong>，比如热力图或雷达图；第三是 <strong>PCA 二维投影</strong>，但一定要提醒自己，二维投影丢掉了高维方差，二维里看起来有点重叠，高维里可能分得很开。</p>
-          <p>看下方 UCI Wine 的 13 维化学特征画像热力图，不需要任何标签，我们一眼就能给三个簇起出非常直观的业务名字：簇 1 酒精度和色度最低，是清爽淡雅型；簇 2 色度高、苹果酸高但类黄酮很低，是浓郁高酸型；簇 3 脯氨酸、类黄酮、总酚全高，是醇厚高酚饱满型。</p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 10 ==================== -->
-      <section class="slide" data-title="Part 3：定量评估指标（WCSS、轮廓系数、RI 与 ARI）" data-time="2.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 3 · 定量评价体系（7.5 – 7.6）</div>
-            <h2 class="slide-title">如何给聚类打分？内部质量指标与一致性指标 ARI</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 2.5 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="grid-2" style="flex:1;">
-            <div class="card white" style="display:flex; flex-direction:column; gap:10px;">
-              <div class="card-title">内部质量指标（无标签评估）</div>
-              <p><strong>1. WCSS（簇内平方和）</strong>：随 <em>K</em> 增大必然单调递减，只能借助“肘部法则”肉眼找拐点。</p>
-              <p><strong>2. 轮廓系数（Silhouette Score）</strong>：平衡簇内平均距离 <em>a(i)</em> 与最近他簇距离 <em>b(i)</em>：</p>
-              <div class="formula-box">
-                <i>s</i>(<i>i</i>) = <span class="frac"><span class="num"><i>b</i>(<i>i</i>) &minus; <i>a</i>(<i>i</i>)</span><span class="den">max{<i>a</i>(<i>i</i>), <i>b</i>(<i>i</i>)}</span></span> &isin; [&minus;1, +1]
-              </div>
-              <div class="card red" style="padding:10px 12px;">
-                <strong>实证避坑：</strong>严禁跨不同预处理空间直接比轮廓系数！未标准化 Wine 轮廓系数高达 <strong>0.571</strong>（高于标准化后的 <strong>0.285</strong>），却是单变量主导的伪结构！
-              </div>
-            </div>
-            <div class="card white" style="display:flex; flex-direction:column; gap:10px;">
-              <div class="card-title">一致性比较指标（PCS 稳定性的核心尺子）</div>
-              <p><strong>1. 兰德指数（Rand Index, RI）</strong>：统计所有样本对中，两次聚类“同属一簇”或“同属不同簇”的比例。但随机乱分时 RI 也会虚高！</p>
-              <p><strong>2. 调整兰德指数（ARI，7.6.1）</strong>：扣除随机一致性期望：</p>
-              <div class="formula-box">
-                ARI = <span class="frac"><span class="num">RI &minus; E[RI]</span><span class="den">max(RI) &minus; E[RI]</span></span>
-                &nbsp;<span style="font-family:sans-serif; font-size:12.5px; color:#64748b;">（随机=0，完全一致=1）</span>
-              </div>
-              <div class="card blue" style="padding:10px 12px;">
-                <strong>实证对照（未标准化 Wine）：</strong>普通 RI 虚高达 <strong>0.719</strong>，极易误导判断；修正后的 <strong>ARI 仅 0.371</strong>，诚实揭露了糟糕的聚类质量！
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>光靠肉眼看图还不够，第 7.5 和 7.6 节引入了两类定量指标。</p>
-          <p>左侧是<strong>内部质量指标</strong>：WCSS 和轮廓系数。轮廓系数在 [-1, 1] 之间，同时兼顾簇内紧密性 a(i) 和簇间分离度 b(i)。这里一定要特别分享我实验里发现的一个“血泪大坑”：<strong>绝对不能跨不同的预处理空间直接比轮廓系数！</strong>未标准化 Wine 的轮廓系数竟然高达 0.571，看起来比标准化后的 0.285 高一倍，其实是因为所有点被拉成了一维长条，根本丢失了 12 个维度的信息。</p>
-          <p>右侧是<strong>比较两次聚类相似度的指标</strong>——兰德指数 RI 和调整兰德指数 ARI。在未标准化 Wine 上，普通 RI 虚高到 0.719，让人误以为还不错；而扣除随机期望后的 ARI 只有 0.371，一下子打回原形。更重要的是，ARI 不只是用来对比真实标签的，它在下一节将作为 <strong>PCS 稳定性检验的核心尺子</strong>！</p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 11 ==================== -->
-      <section class="slide" data-title="Part 4 ★：无监督 V 折交叉验证选 K" data-time="2.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 4 · 核心高光（7.7）</div>
-            <h2 class="slide-title">如何科学选择 K？无监督 V 折交叉验证与双数据集对比</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 2.5 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="card blue" style="padding:10px 16px;">
-            <strong>VDS 7.7.1 无监督 V 折交叉验证流程：</strong>
-            数据分 <em>V</em> 折 → 在 <em>V</em>&minus;1 折训练折上跑聚类得簇中心 → 将留出的<strong>伪验证折</strong>样本分配到最近训练簇中心 → 计算伪验证折轮廓系数并跨折取均值。
-          </div>
-          <div class="grid-2" style="flex:1; min-height:0;">
-            <div class="fig-card" onclick="openLightbox(this)">
-              <img src="figures/wine_02_choose_k_cv.png" alt="UCI Wine 选 K" />
-              <div class="fig-caption"><strong>理想清晰结构（UCI Wine）</strong>：肘部、全样本轮廓(0.285) 与 5 折 CV(0.284±0.037) 三线合一精准锁定 <strong>K=3</strong></div>
-            </div>
-            <div class="fig-card" onclick="openLightbox(this)">
-              <img src="figures/nutrition_02_choose_k_cv.png" alt="USDA FNDDS 选 K" />
-              <div class="fig-caption"><strong>真实高维复杂数据（USDA FNDDS）</strong>：K=2 轮廓虽高(0.185)但无细分意义；5 折 CV 在 K=10~30 稳步回升至 <strong>0.149</strong>，需结合领域粒度决策</div>
-            </div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>现在来到整场汇报的最高光部分——第 7.7 到 7.9 节！</p>
-          <p>首先，怎么科学选 K？原书介绍了一种在普通数模教材里很少见的绝招：<strong>无监督 V 折交叉验证</strong>。很多同学以为交叉验证只能用于监督学习，其实无监督也能做：把数据分成 V 折，用 V-1 折求出簇中心，再把留出的伪验证折样本按最近距离“投影”到这些簇中心上，计算验证折的轮廓系数。这检验的就是 PCS 里的 <strong>Predictability（可预测性）</strong>。</p>
-          <p>把左右两张实测图放一起对比，简直太有教学意义了！左边是结构清晰的 UCI Wine，肘部、全样本轮廓系数和 5 折交叉验证三线合一，干净利落地在 <strong>K=3</strong> 处达到峰值；而右边是真实的 57 维食物数据，虽然 K=2 时轮廓系数最高（0.185），但把 8,690 种食物只分两类毫无营养学价值！而看 5 折 CV 曲线，它在 K=10 到 30 区间稳步回升并保持很小的方差。这完美印证了原书的核心原则：<strong>统计曲线帮你排除噪声、缩小范围，最终定 K 必须结合领域知识与业务粒度！</strong></p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 12 ==================== -->
-      <section class="slide" data-title="Part 4 ★：PCS 稳健性审查（UCI Wine 实测）" data-time="2 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 4 · 核心高光（7.8 PCS Scrutinization）</div>
-            <h2 class="slide-title">PCS 稳健性审查 ①：UCI Wine 扰动矩阵与子采样检验</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 2 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="grid-3">
-            <div class="kpi"><div class="kpi-val teal">1.000</div><div class="kpi-label">K-Means 不同随机种子 ARI</div></div>
-            <div class="kpi"><div class="kpi-val">0.853</div><div class="kpi-label">跨算法（K-Means vs Ward）ARI</div></div>
-            <div class="kpi"><div class="kpi-val teal">0.954 ± 0.047</div><div class="kpi-label">25 次 80% 子采样稳定性 ARI</div></div>
-          </div>
-          <div class="fig-card tall" style="flex:1;" onclick="openLightbox(this)">
-            <img src="figures/wine_04_pcs_stability.png" alt="UCI Wine PCS 稳定性" />
-            <div class="fig-caption">图 5：UCI Wine 8×8 跨算法/预处理扰动 ARI 热力图（左）与 80% 随机子采样稳定性箱线图（右，点击放大）</div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>选完 K 之后，千万别急着下结论——第 7.8 节要求我们进行严格的 <strong>PCS 稳健性审查</strong>，也就是给聚类模型做全方位的“压力测试”：包括<strong>数据扰动</strong>（80% 随机子采样重复跑）、<strong>预处理扰动</strong>、<strong>特征扰动</strong>和<strong>跨算法/随机种子扰动</strong>，全部用 ARI 热力图和箱线图量化。</p>
-          <p>先看 UCI Wine 的审查成绩单：左图左上角亮蓝色的 4×4 方块非常漂亮——标准化后的 K-Means 换随机种子 ARI=1.00，温和地取个对数 ARI=0.93，换用完全不同的 Ward 层次聚类 ARI 依然高达 <strong>0.85</strong>！右图 25 次 80% 子采样箱线图也证实，标准化 K-Means 的数据扰动 ARI 高达 <strong>0.954 ± 0.047</strong>，而未标准化 K-Means 的波动标准差扩大了 3.6 倍。</p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 13 ==================== -->
-      <section class="slide" data-title="Part 4 ★：PCS 稳健性审查（USDA FNDDS 实测与反直觉彩蛋）" data-time="2 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 4 · 核心高光（7.8 复现原书实证）</div>
-            <h2 class="slide-title">PCS 稳健性审查 ②：USDA 食物数据与“虚假稳定”警示</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 2 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="grid-2-right" style="flex:1; min-height:0;">
-            <div style="display:flex; flex-direction:column; gap:10px;">
-              <div class="card white">
-                <div class="card-title">关键扰动定量结论（K=10）</div>
-                <ul>
-                  <li><strong>随机种子扰动</strong>：ARI = <span class="hl-good">0.919 / 0.881</span>（高度稳定）。</li>
-                  <li><strong>删去总脂肪列（<code>remove_fat</code>）</strong>：ARI = <span class="hl-good">0.810</span>（复现原书特征扰动，结构依然稳健！）。</li>
-                  <li><strong>跨算法（vs Ward）</strong>：ARI = <strong>0.406</strong>（57 维真实边界存在交叉）。</li>
-                  <li><strong>预处理（对数 vs 未取对数）</strong>：ARI = <span class="hl-bad">0.240</span>（K=30 仅 <strong>0.171</strong>）。</li>
-                </ul>
-              </div>
-              <div class="card red" style="flex:1;">
-                <div class="card-title">反直觉彩蛋：警惕“虚假稳定”！</div>
-                <p>右图箱线图中，<strong>未取对数 K=10 的子采样 ARI（0.887）竟然高于对数变换（0.790）</strong>！为什么？</p>
-                <p style="margin-top:6px;">因为超过一半食物（52.2%）永远被“锁死”在同一个巨型垃圾簇里，怎么抽样都在一起！<strong>结论：高稳定性必须建立在有意义的聚类结构之上（Stability &ne; Meaningfulness）！</strong></p>
-              </div>
-            </div>
-            <div class="fig-card tall" onclick="openLightbox(this)">
-              <img src="figures/nutrition_03_pcs_stability.png" alt="USDA FNDDS PCS 稳定性" />
-              <div class="fig-caption">图 6：USDA FNDDS 跨种子/特征删减/算法/预处理 ARI 热力图与 80% 子采样稳定性（点击放大）</div>
-            </div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>再看高维复杂的 USDA 食物营养数据，这里的 PCS 审查甚至跑出了一个特别有深度的<strong>反直觉彩蛋</strong>！</p>
-          <p>先看左图热力图：对数变换后，换随机种子的 ARI 在 0.88 到 0.92 之间；哪怕我们按照原书代码里的设计，<strong>把“总脂肪”这一整列核心特征直接删掉</strong>，聚出来的类与原结果 ARI 依然高达 <strong>0.810</strong>，说明食物的营养结构非常稳健；而换算法（K-Means vs Ward）ARI 是 0.406，说明高维真实食物边界不如红酒那么界限分明。</p>
-          <p>最精彩的是右图箱线图：大家看橙色箱子，未取对数的子采样 ARI 居然高达 <strong>0.887</strong>，比对数变换的 0.790 还高！为什么？因为 52.2% 的食物被永久“锁死”在同一个巨型垃圾簇里，怎么重采样它们都黏在一起，ARI 自然虚高！这给我们敲响了警钟：<strong>稳定性本身不是终点，必须与簇大小分布和领域语义检验联合判断！</strong></p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 14 ==================== -->
-      <section class="slide" data-title="Part 4 ★：最终聚类与食物原型抽样（7.9）" data-time="2 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 4 · 最终落地（7.9 The Final Clusters）</div>
-            <h2 class="slide-title">最终聚类解读：数据自动还原出的“食物营养分类学”</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 2 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="grid-2-wide" style="flex:1; min-height:0;">
-            <div class="fig-card tall" onclick="openLightbox(this)">
-              <img src="figures/nutrition_04_cluster_profiles.png" alt="USDA FNDDS 营养素画像" />
-              <div class="fig-caption">图 7：USDA FNDDS (K=10) 10 类食物的核心营养素特征画像热力图（点击放大）</div>
-            </div>
-            <div style="overflow-y:auto;">
-              <table>
-                <thead>
-                  <tr><th>簇</th><th class="num-col">数量</th><th>离质心最近的原型食物</th><th>自动识别的营养主题</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><strong>簇 8</strong></td><td class="num-col">51</td><td>Mackerel; Barracuda</td><td class="hl-blue">深海鱼/海鲜（极高B12零碳水）</td></tr>
-                  <tr><td><strong>簇 9</strong></td><td class="num-col">221</td><td>Cheerios; Frosted oat cereal</td><td class="hl-blue">强化早餐谷物麦片（高铁高碳水）</td></tr>
-                  <tr><td><strong>簇 10</strong></td><td class="num-col">1,992</td><td>Broccoli; Peas</td><td class="hl-good">绿叶/豆类蔬菜（高纤维高维C）</td></tr>
-                  <tr><td><strong>簇 3</strong></td><td class="num-col">1,011</td><td>Fried turkey; Salami</td><td>高蛋白肉类主菜（高蛋白高胆固醇）</td></tr>
-                  <tr><td><strong>簇 4</strong></td><td class="num-col">788</td><td>Oat bran muffin; Oatmeal bread</td><td>全谷物燕麦烘焙主食</td></tr>
-                  <tr><td><strong>簇 1</strong></td><td class="num-col">769</td><td>Applesauce; Pear nectar</td><td>果泥与果汁甜饮（高水高糖低脂）</td></tr>
-                  <tr><td><strong>簇 2</strong></td><td class="num-col">618</td><td>Iced cake; Peanut butter cookie</td><td>蛋糕与高脂曲奇甜点</td></tr>
-                  <tr><td><strong>簇 5</strong></td><td class="num-col">305</td><td>Grilled cheese; Ham croissant</td><td>奶酪/乳脂三明治（高饱和脂肪高钙）</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>经过 PCS 审查确认对数变换与标准化是稳健且有意义的选择后，来看第 7.9 节的最终成果！</p>
-          <p>完全没有给算法提供任何食物名字或传统分组，仅仅输入 57 项营养素数值，我们把每个簇离质心最近的“原型食物”打印出来（看右表），结果令人惊叹：算法自动揪出了一个只有 51 种食物却极其纯净的<strong>深海鱼/海鲜簇</strong>（鲭鱼、梭鱼，极高维生素 B12、零碳水）；自动分出了 221 种<strong>强化早餐麦片簇</strong>（清一色 Cheerios 等高铁强化麦片）；还有 1,992 种<strong>绿叶/豆类蔬菜</strong>、1,011 种<strong>高蛋白肉类</strong>、全谷物燕麦面包、果泥果汁、高脂曲奇蛋糕等等。</p>
-          <p>原书进一步细化到 K=30 时，甚至能把绿叶菜、豆类蔬菜、奶昔布丁、汉堡快餐分得更细，真正构建了一套数据驱动、可复现的营养分类学。</p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 15 ==================== -->
-      <section class="slide" data-title="Part 5：双数据集实证全景对照与计算权衡" data-time="1.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 5 · 实证对照与可计算性</div>
-            <h2 class="slide-title">从“教科书数据”到“真实世界数据”：双实验全景对照</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 1.5 min</div>
-        </div>
-        <div class="slide-body">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:18%;">对比维度</th>
-                <th style="width:41%;">数据集 A：UCI Wine（178 × 13）</th>
-                <th style="width:41%;">数据集 B：USDA FNDDS（8,690 × 57）</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>最大预处理痛点</strong></td>
-                <td>量纲悬殊（2,530 倍）→ <strong>Z-score 标准化</strong>（ARI 0.371 → 0.897）</td>
-                <td>极端右偏（偏度 9.69）→ <strong>log<sub>10</sub>(x+1) + 标准化</strong>（最大簇 52.2% → 22.9%）</td>
-              </tr>
-              <tr>
-                <td><strong>选 K 的表现</strong></td>
-                <td>肘部、轮廓系数、5 折 CV 三线合一，精准命中 <strong>K=3</strong></td>
-                <td>无唯一“上帝指定 K”，CV 验证稳健后按营养学粒度取 <strong>K=10 / 30</strong></td>
-              </tr>
-              <tr>
-                <td><strong>PCS 稳定性</strong></td>
-                <td>子采样 ARI = <strong>0.954</strong>，跨算法（Ward）ARI = <strong>0.853</strong></td>
-                <td>子采样 ARI = <strong>0.790</strong>，去脂肪特征 ARI = <strong>0.810</strong>，跨算法 <strong>0.406</strong></td>
-              </tr>
-              <tr>
-                <td><strong>可计算性（C）</strong></td>
-                <td>小样本（178 条），层次聚类与 K-Means 均毫秒级完成</td>
-                <td>中等偏大样本（8,690 条），K-Means &lt;1s；Ward 需 <em>O(n²)</em> 内存故抽样 3,000 对照</td>
-              </tr>
-              <tr>
-                <td><strong>反直觉避坑点</strong></td>
-                <td>未标准化时轮廓系数（0.571）与普通 RI（0.719）双双虚假偏高</td>
-                <td>未取对数时因半数样本塌缩进垃圾簇导致子采样 ARI（0.887）虚假稳定</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="card teal">
-            <strong>PCS 文档化与可复现实践：</strong>本汇报全部 Python 代码、清洗数据缓存与 9 张中文高清图表已完整开源至 <strong>https://github.com/Alrediph/clustering</strong>，一键 <code>python src/wine_clustering.py</code> / <code>nutrition_clustering.py</code> 即可复现。
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>这一页把我们跑完的两个数据集放在同一张表里做全景复盘，大家能非常直观地体会到“教科书数据”和“真实世界高维数据”的区别：</p>
-          <p>在 Wine 上，主要矛盾是量纲，标准化之后所有指标完美锁定 K=3，跨算法和子采样稳定性极高；而在真实的 8,690 种食物数据上，主要矛盾变成了极端右偏，没有唯一“标准答案式的 K”，计算复杂度也逼着我们在层次聚类和 K-Means 之间做工程权衡。</p>
-          <p>同时，为了践行原书强调的“PCS 文档化与透明可复现”，我已经把全套 Python 代码和复现结果上传到了 GitHub，课后大家都可以直接拉下来跑一遍。</p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 16 ==================== -->
-      <section class="slide" data-title="Part 5：面向数学建模竞赛的算法拓展" data-time="1.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 5 · 数学建模竞赛拓展</div>
-            <h2 class="slide-title">走出第 7 章：国赛 / 美赛高频进阶聚类武器库</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 1.5 min</div>
-        </div>
-        <div class="slide-body">
-          <p>原书第 7 章聚焦最核心的 K-Means 与层次聚类；在数学建模竞赛中，面对不同数据几何形态，建议按需组合以下三种进阶方案：</p>
-          <div class="grid-3" style="flex:1;">
-            <div class="card blue">
-              <div class="card-title">DBSCAN（基于密度）</div>
-              <ul>
-                <li><strong>解决痛点</strong>：发现任意非球形簇（如月牙、带状地理分布），并<strong>自动识别离群噪声点</strong>。</li>
-                <li><strong>典型赛题</strong>：应急救援点片区划分、野生动物栖息地识别、空间轨迹异常清洗。</li>
-              </ul>
-            </div>
-            <div class="card teal">
-              <div class="card-title">GMM（高斯混合模型）</div>
-              <ul>
-                <li><strong>解决痛点</strong>：K-Means 是“硬聚类”，GMM 基于 EM 算法输出样本属于各簇的<strong>后验概率（软聚类）</strong>，允许椭球形协方差结构。</li>
-                <li><strong>典型赛题</strong>：消费者混合偏好画像、金融市场多状态区制切换。</li>
-              </ul>
-            </div>
-            <div class="card amber">
-              <div class="card-title">聚类 + 综合评价组合拳</div>
-              <ul>
-                <li><strong>建模套路</strong>：先用 PCA + 聚类将评价对象分梯队（如全国城市发展类型），再在各簇内部用<strong>熵权法 / TOPSIS</strong> 差异化赋权排序。</li>
-                <li><strong>评委加分点</strong>：避免“一刀切”评价，直接用 PCS 扰动 ARI 作为论文的<strong>灵敏度分析章节</strong>！</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>最后结合我们数学建模课的特点，花一分钟把视野往国赛和美赛稍微拓宽一点。</p>
-          <p>原书第 7 章重点讲了 K-Means 和层次聚类，如果比赛中遇到非球形或者经纬度空间带噪声的数据，推荐改用 <strong>DBSCAN</strong>，它能自动把异常点标成噪声；如果需要知道某个样本“60% 像 A 类、40% 像 B 类”的软归属，可以用 <strong>高斯混合模型 GMM</strong>。</p>
-          <p>另外在综合评价类赛题里，一个非常拿分的套路是“先聚类分梯队，再分层赋权做 TOPSIS”，而且今天学到的 <strong>PCS 子采样与跨算法 ARI 检验</strong>，直接拿来写进数模论文的“模型稳健性与灵敏度分析”一节，绝对能让评委眼前一亮！</p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 17 ==================== -->
-      <section class="slide" data-title="Part 6：一页带走——数模聚类 PCS 实操 Checklist" data-time="1.5 分钟">
-        <div class="slide-header">
-          <div>
-            <div class="slide-kicker">Part 6 · 总结与实操指南</div>
-            <h2 class="slide-title">一页带走：数学建模聚类分析 PCS 实操 Checklist</h2>
-          </div>
-          <div class="slide-time-tag">建议用时 1.5 min</div>
-        </div>
-        <div class="slide-body">
-          <div class="grid-2" style="flex:1;">
-            <div class="card white">
-              <div class="card-title"><span class="hl-blue">STEP 1</span> 预处理先行（记录所有 Judgment Calls）</div>
-              <ul>
-                <li>先做 EDA 检查<strong>量纲差异</strong>与<strong>偏态长尾</strong>（查看偏度）。</li>
-                <li>量纲悬殊必做 Z-score；严重右偏先做 <code>log(1+x)</code> 再标准化。</li>
-                <li>严禁跨不同预处理空间直接比轮廓系数。</li>
-              </ul>
-            </div>
-            <div class="card white">
-              <div class="card-title"><span class="hl-blue">STEP 2</span> 拒绝拍脑袋定 K（Predictability）</div>
-              <ul>
-                <li>联合查看 WCSS 肘部、轮廓系数与 <strong>V 折无监督交叉验证</strong>曲线。</li>
-                <li>不要盲目选轮廓系数最大的 <em>K=2</em>，必须结合下游任务粒度与领域知识决策。</li>
-              </ul>
-            </div>
-            <div class="card white">
-              <div class="card-title"><span class="hl-good">STEP 3</span> 必须做稳健性审查（Stability）</div>
-              <ul>
-                <li>对比不同随机种子、80% 子采样、特征微调与跨算法（K-Means vs Ward），绘制 <strong>ARI 热力图</strong>。</li>
-                <li>同时检查各簇样本量分布，警惕“垃圾簇锁死导致的虚假稳定”。</li>
-              </ul>
-            </div>
-            <div class="card white">
-              <div class="card-title"><span class="hl-good">STEP 4</span> 高维解释与可复现文档化</div>
-              <ul>
-                <li>用<strong>原型样本抽样 + 特征均值热力图/雷达图 + PCA 2D 投影</strong>讲清每一类的物理/业务含义。</li>
-                <li>固定随机种子、公开脚本与预处理记录，确保他人一键复现。</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div class="slide-notes" hidden>
-          <p>用一页可以带走的四步 Checklist 总结今天的全部内容：</p>
-          <p>第一步，预处理先行，看量纲、看偏度，把标准化和对数变换当成头等大事；第二步，拒绝拍脑袋定 K，把无监督交叉验证和领域知识结合起来；第三步，必须做 PCS 稳健性审查，用子采样、跨算法和 ARI 矩阵证明结论不是偶然产物；第四步，用原型抽样和特征画像把冷冰冰的簇编号翻译成听得懂的业务语言。</p>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 18 ==================== -->
-      <section class="slide cover-slide" data-title="致谢与 Q&A" data-time="5 分钟问答">
-        <div class="cover-badge">感谢聆听 · Q&amp;A 交流环节</div>
-        <h1 class="cover-title" style="font-size:36px;">谢谢大家！欢迎提问与讨论</h1>
-        <p class="cover-subtitle" style="margin-bottom:24px;">
-          让无监督聚类从“凭感觉分群”走向“可预测、可计算、可验证的科学建模”。
-        </p>
-        <div class="grid-2" style="width:100%; max-width:940px; margin-bottom:20px;">
+    <!-- ==================== SLIDE 8 ==================== -->
+    <section class="slide" data-title="3.1 高维聚类可视化与解释理论">
+      <div class="slide-header">
+        <div class="slide-section">四、高维聚类表征与可视化（7.4）</div>
+        <h2 class="slide-title">高维空间中的聚类可视化与语义解释方法</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-3">
           <div class="card white">
-            <div class="card-title">核心参考文献</div>
-            <ul style="font-size:13px;">
-              <li>Bin Yu &amp; Rebecca L. Barter (2024). <em>Veridical Data Science</em>, Ch. 7. (vdsbook.com)</li>
-              <li>Yu, B., &amp; Kumbier, K. (2020). Veridical data science. <em>PNAS</em>, 117(8), 3920–3929.</li>
-              <li>Rousseeuw (1987) 轮廓系数；Hubert &amp; Arabie (1985) ARI；Tibshirani &amp; Walther (2005) 预测强度选 K。</li>
-            </ul>
+            <div class="card-title">1. 原型样本抽样（7.4.1）</div>
+            <p>按欧氏距离选取最接近各簇质心 <b>&mu;</b><sub>k</sub> 的代表观测，或分层随机抽样，借助领域先验检验簇内语义一致性。</p>
           </div>
-          <div class="card blue">
-            <div class="card-title">本项目开源资源</div>
-            <ul style="font-size:13px;">
-              <li><strong>GitHub 仓库</strong>：github.com/Alrediph/clustering</li>
-              <li><strong>包含内容</strong>：UCI Wine &amp; USDA FNDDS 全套复现代码、清洗后数据缓存、9 张简体中文高清图表、学习笔记与实验报告。</li>
-            </ul>
+          <div class="card white">
+            <div class="card-title">2. 边际特征分布对比</div>
+            <p>对各特征维度绘制跨簇箱线图、核密度曲线或标准化均值热力图，量化各变量对簇间分离的贡献度。</p>
+          </div>
+          <div class="card white">
+            <div class="card-title">3. 低维线性投影（PCA）</div>
+            <p>通过主成分分析将 &#8477;<sup>d</sup> 投影至前两个正交主方向；需注意投影存在信息损失：<em>低维可分必高维可分，反之不必然</em>。</p>
           </div>
         </div>
-        <div class="slide-notes" hidden>
-          <p>以上就是我今天汇报的全部内容，谢谢老师和同学们！下面进入提问交流环节。</p>
-          <div class="notes-tip">
-            <strong>【Q&amp;A 应答锦囊】</strong><br/>
-            1. <strong>问：无监督 CV 和监督 CV 区别？</strong><br/>
-            答：无监督 CV 在训练折学出簇中心，将伪验证折样本按最近距离投影过去算轮廓系数/距离，检验簇结构在未见样本上的泛化性。<br/>
-            2. <strong>问：PCS 审查发现 K-Means 和层次聚类 ARI 很低怎么办？</strong><br/>
-            答：这是宝贵信号——可能数据本身是连续分布无明显团块，或预处理未去偏态，或簇呈非球形（改试 DBSCAN/GMM），并在报告中诚实披露不确定性。<br/>
-            3. <strong>问：为什么原书食物聚类选 K=30 这么大？</strong><br/>
-            答：取决于下游粒度。8,690 种食物分 3 类只能粗分高碳/高脂/高蛋白；K=30 才能细分出绿叶菜、深海鱼、强化麦片等膳食指导类别。<br/>
-            4. <strong>问：数模中层次聚类和 K-Means 怎么选？</strong><br/>
-            答：小样本(&lt;2000)看多尺度层次用 Ward；大样本用 K-Means(K-Means++)；最佳实践是两个都跑并用 ARI 互相印证！
+        <div class="grid-2" style="flex:1; min-height:0;">
+          <div class="fig-card" onclick="openLightbox(this)">
+            <img src="figures/wine_03_dendrogram_linkage.png" alt="Ward 树状图" />
+            <div class="fig-caption">层次结构可视化：Ward 树状图（Dendrogram）及四种 Linkage 指标对比</div>
+          </div>
+          <div class="fig-card" onclick="openLightbox(this)">
+            <img src="figures/wine_05_cluster_profiles.png" alt="高维特征画像" />
+            <div class="fig-caption">高维特征画像：UCI Wine 13 维标准化均值热力图清晰刻画三类理化特征差异</div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-    </div>
+    <!-- ==================== SLIDE 9 ==================== -->
+    <section class="slide" data-title="3.2 聚类内部质量评估理论：WCSS 与轮廓系数">
+      <div class="slide-header">
+        <div class="slide-section">五、定量评估指标体系（7.5 内部评估）</div>
+        <h2 class="slide-title">内部质量度量：方差分解（WCSS）与轮廓系数理论</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2" style="flex:1;">
+          <div class="card white" style="display:flex; flex-direction:column; gap:10px;">
+            <div class="card-title">1. 总离差平方和分解与 WCSS（7.5.1）</div>
+            <div class="formula-box">
+              TSS = WCSS + BCSS<br/>
+              <span style="font-size:13.5px;">&Sigma;<sub>i</sub> ‖<b>x</b><sub>i</sub> &minus; <b>&mu;</b>‖<sup>2</sup> = &Sigma;<sub>k</sub> &Sigma;<sub>i&isin;C<sub>k</sub></sub> ‖<b>x</b><sub>i</sub> &minus; <b>&mu;</b><sub>k</sub>‖<sup>2</sup> + &Sigma;<sub>k</sub> |<em>C</em><sub>k</sub>| ‖<b>&mu;</b><sub>k</sub> &minus; <b>&mu;</b>‖<sup>2</sup></span>
+            </div>
+            <ul>
+              <li>最小化 WCSS 等价于最大化簇间平方和 BCSS。</li>
+              <li><strong>单调性缺陷</strong>：随着 <em>K</em> 增大，WCSS 严格非增（当 <em>K</em>=<em>n</em> 时 WCSS=0），因此不能直接以最小化 WCSS 作为选 <em>K</em> 准则。</li>
+            </ul>
+          </div>
+          <div class="card white" style="display:flex; flex-direction:column; gap:10px;">
+            <div class="card-title">2. 轮廓系数（Silhouette Coefficient, Rousseeuw 1987）</div>
+            <p>记 <em>a</em>(<em>i</em>) 为样本 <em>i</em> 到同簇其他样本的平均距离，<em>b</em>(<em>i</em>) 为到最近其他簇的平均距离：</p>
+            <div class="formula-box">
+              <i>s</i>(<i>i</i>) = <span class="frac"><span class="num"><i>b</i>(<i>i</i>) &minus; <i>a</i>(<i>i</i>)</span><span class="den">max{<i>a</i>(<i>i</i>), <i>b</i>(<i>i</i>)}</span></span> &isin; [&minus;1, +1]
+            </div>
+            <ul>
+              <li><em>s</em>(<em>i</em>) &rarr; +1 表明紧密且分离良好；<em>s</em>(<em>i</em>) &approx; 0 位于边界；<em>s</em>(<em>i</em>) &lt; 0 可能存在错分。</li>
+              <li><strong>理论限制</strong>：依赖所处度量空间，<strong>不可跨不同预处理变换直接比较</strong>（如未标准化 Wine 轮廓系数 0.571 高于标准化后的 0.285，系单变量拉伸所致）。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 10 ==================== -->
+    <section class="slide" data-title="3.3 划分一致性度量理论：Rand Index 与 ARI">
+      <div class="slide-header">
+        <div class="slide-section">五、定量评估指标体系（7.6 一致性度量）</div>
+        <h2 class="slide-title">聚类划分的相似度比较：Rand Index 与调整兰德指数（ARI）</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card white">
+            <div class="card-title">基于样本对的列联计数</div>
+            <p>设 <em>U</em>、<em>V</em> 为同一数据集上的两种聚类划分，考察全部 <em>N</em> = <em>n</em>(<em>n</em>&minus;1)/2 对无序样本 (<b>x</b><sub>i</sub>, <b>x</b><sub>j</sub>)：</p>
+            <table style="margin-top:8px;">
+              <thead><tr><th>样本对状态</th><th class="num-col">在 <em>V</em> 中同簇</th><th class="num-col">在 <em>V</em> 中异簇</th></tr></thead>
+              <tbody>
+                <tr><td><strong>在 <em>U</em> 中同簇</strong></td><td class="num-col"><em>a</em>（一致）</td><td class="num-col"><em>c</em>（不一致）</td></tr>
+                <tr><td><strong>在 <em>U</em> 中异簇</strong></td><td class="num-col"><em>d</em>（不一致）</td><td class="num-col"><em>b</em>（一致）</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card white">
+            <div class="card-title">随机基准修正的必要性（Hubert &amp; Arabie, 1985）</div>
+            <div class="formula-box">
+              RI = <span class="frac"><span class="num"><i>a</i> + <i>b</i></span><span class="den"><i>a</i> + <i>b</i> + <i>c</i> + <i>d</i></span></span> &isin; [0, 1]
+            </div>
+            <div class="formula-box">
+              ARI = <span class="frac"><span class="num">RI &minus; &#120124;[RI]</span><span class="den">max(RI) &minus; &#120124;[RI]</span></span> &le; 1
+            </div>
+            <p>在独立随机划分假设（广义超几何分布）下，由于 <em>b</em> 通常很大，普通 RI 期望显著大于 0；ARI 扣除随机期望后，<strong>随机划分期望为 0，完全一致为 1</strong>，且对簇标签置换保持不变。</p>
+          </div>
+        </div>
+        <div class="card blue">
+          <strong>在 PCS 框架中的核心作用：</strong>ARI 不仅用于对照外部参考标签（如未标准化 Wine 上普通 RI = 0.719 而 ARI 仅 0.371），更核心的用途是<strong>衡量不同扰动配置下两次无监督划分的一致性</strong>。
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 11 ==================== -->
+    <section class="slide" data-title="4.1 模型选择理论：无监督 V 折交叉验证选 K">
+      <div class="slide-header">
+        <div class="slide-section">六、簇数 K 的模型选择理论（7.7）</div>
+        <h2 class="slide-title">无监督学习中的模型选择：V 折交叉验证（Predictability）</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2-wide">
+          <div class="algo-box">
+            <div class="algo-title">算法：无监督 V 折交叉验证选择 K（VDS 7.7.1）</div>
+            <ol>
+              <li>将样本集 <em>X</em> 随机划分为 <em>V</em> 个互不相交的子集（折）<em>X</em><sub>1</sub>, &hellip;, <em>X</em><sub>V</sub>。</li>
+              <li>对每个候选簇数 <em>K</em> &isin; &#119974;，遍历每一折 <em>v</em> = 1, &hellip;, <em>V</em>：
+                <ul>
+                  <li>在训练折 <em>X</em><sub>&minus;v</sub> 上拟合聚类算法，获得 <em>K</em> 个簇中心 {<b>&mu;</b><sub>1</sub><sup>(&minus;v)</sup>, &hellip;, <b>&mu;</b><sub>K</sub><sup>(&minus;v)</sup>}；</li>
+                  <li>将<strong>伪验证折</strong> <em>X</em><sub>v</sub> 中的样本按最近质心规则分配标签：<em>&ccedil;</em>(<b>x</b>) = argmin<sub>k</sub> ‖<b>x</b> &minus; <b>&mu;</b><sub>k</sub><sup>(&minus;v)</sup>‖<sub>2</sub>；</li>
+                  <li>在伪验证折 <em>X</em><sub>v</sub> 上计算验证得分 <em>S</em><sub>v</sub>(<em>K</em>)（如平均轮廓系数或平均平方距离）。</li>
+                </ul>
+              </li>
+              <li>计算跨折均值与标准差，结合领域粒度确定最终 <em>K</em>。</li>
+            </ol>
+          </div>
+          <div class="card white" style="display:flex; flex-direction:column; gap:10px;">
+            <div class="card-title">方法论优势与边界</div>
+            <ul>
+              <li><strong>抑制样本内过拟合</strong>：传统肘部法则与全样本轮廓系数仅评估训练拟合度；无监督 CV 检验簇结构在未见样本上的<strong>外推一致性</strong>。</li>
+              <li><strong>量化波动区间</strong>：跨 <em>V</em> 折标准差可反映不同 <em>K</em> 下模型表现的方差水平。</li>
+              <li><strong>统计与领域协同</strong>：在多尺度连续分布的真实高维数据中，统计曲线用于排除不合理区间，最终 <em>K</em> 需兼顾下游科学/决策粒度。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 12 ==================== -->
+    <section class="slide" data-title="4.2 实证验证②：双数据集无监督交叉验证选 K 对比">
+      <div class="slide-header">
+        <div class="slide-section">六、簇数 K 的模型选择实证（7.7）</div>
+        <h2 class="slide-title">实证检验 ②：低维分离结构与高维复杂结构的选 K 对比</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2" style="flex:1; min-height:0;">
+          <div class="fig-card tall" onclick="openLightbox(this)">
+            <img src="figures/wine_02_choose_k_cv.png" alt="UCI Wine 选 K" />
+            <div class="fig-caption"><strong>清晰低维结构（UCI Wine）</strong>：WCSS 拐点、全样本轮廓系数 (0.285) 与 5 折 CV (0.284±0.037) 一致指向 <strong>K = 3</strong></div>
+          </div>
+          <div class="fig-card tall" onclick="openLightbox(this)">
+            <img src="figures/nutrition_02_choose_k_cv.png" alt="USDA FNDDS 选 K" />
+            <div class="fig-caption"><strong>高维连续结构（USDA FNDDS）</strong>：K = 2 轮廓虽高 (0.185) 但粒度过粗；5 折 CV 在 K = 10~30 稳步回升至 <strong>0.149±0.007</strong></div>
+          </div>
+        </div>
+        <div class="card white" style="padding:10px 16px;">
+          <strong>对比结论：</strong>当数据存在清晰的自然团块时，多准则与 CV 能够唯一收敛；而在复杂高维真实数据中，不存在单一统计极值解，需在交叉验证确认泛化稳定的区间内结合专业粒度决策。
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 13 ==================== -->
+    <section class="slide" data-title="5.1 PCS 稳健性审查理论（7.8）">
+      <div class="slide-header">
+        <div class="slide-section">七、PCS 稳健性审查理论（7.8 PCS Scrutinization）</div>
+        <h2 class="slide-title">聚类结果的系统性扰动设计与稳定性评估理论</h2>
+      </div>
+      <div class="slide-body">
+        <p>PCS 框架要求在交付最终聚类结论前，对建模链路中的四类不确定性来源进行显式扰动测试，并以 <strong>ARI 矩阵</strong>与<strong>扰动分布区间</strong>进行定量汇报：</p>
+        <table>
+          <thead>
+            <tr><th style="width:20%;">扰动类别</th><th style="width:32%;">具体扰动操作</th><th style="width:24%;">量化评估方法</th><th style="width:24%;">科学诊断含义</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. 数据扰动</strong></td>
+              <td>Bootstrap 重采样 / 80% 无放回子采样（重复 <em>B</em> 次）</td>
+              <td>计算两两子采样公共样本集的 ARI 分布</td>
+              <td>检验簇结构对有限抽样变异的鲁棒性</td>
+            </tr>
+            <tr>
+              <td><strong>2. 预处理与特征扰动</strong></td>
+              <td>原始尺度 vs 标准化 vs 对数变换；剔除高相关或关键特征</td>
+              <td>不同预处理划分间的两两 ARI 与簇大小分布</td>
+              <td>识别高敏感度建模判断，验证特征冗余鲁棒性</td>
+            </tr>
+            <tr>
+              <td><strong>3. 算法与初始化扰动</strong></td>
+              <td>更换随机种子；跨算法对照（K-Means vs 层次 Ward/Average）</td>
+              <td>跨算法/跨初始化 ARI 热力图</td>
+              <td>区分真实数据结构与特定算法的几何偏置</td>
+            </tr>
+            <tr>
+              <td><strong>4. 外部/样本外扰动</strong></td>
+              <td>留出验证集投影或独立外部数据集映射</td>
+              <td>伪验证折轮廓系数 / 预测强度</td>
+              <td>验证簇结构的样本外可预测性（P）</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="card red">
+          <strong>关键理论辨析（稳定性 &ne; 有效性）：</strong>高稳定性是可信聚类的<strong>必要条件而非充分条件</strong>。若退化划分将绝大多数样本集中于单一巨型簇，重采样 ARI 虽可能很高，却不具备科学解释价值；必须同时审查<strong>簇规模均衡性与领域语义</strong>。
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 14 ==================== -->
+    <section class="slide" data-title="5.2 实证验证③：PCS 稳健性审查结果">
+      <div class="slide-header">
+        <div class="slide-section">七、PCS 稳健性审查实证（7.8）</div>
+        <h2 class="slide-title">实证检验 ③：跨扰动 ARI 矩阵与子采样稳定性分析</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2" style="flex:1; min-height:0;">
+          <div class="fig-card tall" onclick="openLightbox(this)">
+            <img src="figures/wine_04_pcs_stability.png" alt="UCI Wine PCS 稳定性" />
+            <div class="fig-caption"><strong>UCI Wine</strong>：标准化 K-Means 跨种子 ARI = <strong>1.00</strong>，跨算法(Ward) = <strong>0.85</strong>，子采样 = <strong>0.954±0.047</strong></div>
+          </div>
+          <div class="fig-card tall" onclick="openLightbox(this)">
+            <img src="figures/nutrition_03_pcs_stability.png" alt="USDA FNDDS PCS 稳定性" />
+            <div class="fig-caption"><strong>USDA FNDDS</strong>：对数变换后跨种子 ARI = <strong>0.88–0.92</strong>，剔除总脂肪特征仍达 <strong>0.810</strong>；未取对数子采样 ARI (0.887) 系巨型簇锁死导致的<strong>伪稳定</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 15 ==================== -->
+    <section class="slide" data-title="5.3 最终聚类与领域语义验证（7.9）">
+      <div class="slide-header">
+        <div class="slide-section">七、最终聚类确立与语义解释（7.9）</div>
+        <h2 class="slide-title">实证检验 ④：USDA 食物营养数据的最终聚类与原型解释</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2-wide" style="flex:1; min-height:0;">
+          <div class="fig-card tall" onclick="openLightbox(this)">
+            <img src="figures/nutrition_04_cluster_profiles.png" alt="USDA FNDDS 营养素画像" />
+            <div class="fig-caption">对数变换 + 标准化 K-Means (K=10) 核心营养素标准化均值热力图</div>
+          </div>
+          <div style="overflow-y:auto;">
+            <table>
+              <thead>
+                <tr><th>簇</th><th class="num-col">样本量</th><th>近质心原型样本</th><th>对应营养学类别</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>簇 8</strong></td><td class="num-col">51</td><td>Mackerel; Barracuda</td><td class="hl-blue">海鲜鱼类（高 B12、零碳水）</td></tr>
+                <tr><td><strong>簇 9</strong></td><td class="num-col">221</td><td>Cheerios; Frosted oat cereal</td><td class="hl-blue">强化早餐谷物（高铁高碳水）</td></tr>
+                <tr><td><strong>簇 10</strong></td><td class="num-col">1,992</td><td>Broccoli; Peas</td><td class="hl-good">绿叶与豆类蔬菜（高纤维维 C）</td></tr>
+                <tr><td><strong>簇 3</strong></td><td class="num-col">1,011</td><td>Fried turkey; Salami</td><td>高蛋白肉类制品（高蛋白高胆固醇）</td></tr>
+                <tr><td><strong>簇 4</strong></td><td class="num-col">788</td><td>Oat bran muffin; Oatmeal bread</td><td>全谷物燕麦烘焙主食</td></tr>
+                <tr><td><strong>簇 1</strong></td><td class="num-col">769</td><td>Applesauce; Pear nectar</td><td>果泥与含糖果饮（高水高糖低脂）</td></tr>
+                <tr><td><strong>簇 2</strong></td><td class="num-col">618</td><td>Iced cake; Peanut butter cookie</td><td>高脂高糖烘焙甜点</td></tr>
+                <tr><td><strong>簇 5</strong></td><td class="num-col">305</td><td>Grilled cheese; Ham croissant</td><td>乳脂/奶酪三明治（高饱和脂肪高钙）</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 16 ==================== -->
+    <section class="slide" data-title="6.1 方法论拓展：四大聚类范式的数学比较">
+      <div class="slide-header">
+        <div class="slide-section">八、数学建模方法论拓展</div>
+        <h2 class="slide-title">超越第 7 章：四大主流聚类范式的数学机制与适用边界</h2>
+      </div>
+      <div class="slide-body">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:16%;">聚类范式</th>
+              <th style="width:16%;">代表算法</th>
+              <th style="width:28%;">核心数学机制</th>
+              <th style="width:20%;">几何假设与复杂度</th>
+              <th style="width:20%;">典型数模应用场景</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>划分式</strong></td>
+              <td>K-Means / K-Medoids</td>
+              <td>最小化簇内平方和（或 L<sub>1</sub> 中心距离），交替优化求解</td>
+              <td>凸球形、近似等方差；<em>O</em>(<em>nKdt</em>)</td>
+              <td>大规模客户分群、特征压缩、指标分层</td>
+            </tr>
+            <tr>
+              <td><strong>层次式</strong></td>
+              <td>Agglomerative (Ward)</td>
+              <td>基于 Linkage 准则自底向上构建超度量树状图</td>
+              <td>无需先定 <em>K</em>；<em>O</em>(<em>n</em><sup>2</sup> log <em>n</em>)</td>
+              <td>中小规模多尺度分类、基因/区域谱系分析</td>
+            </tr>
+            <tr>
+              <td><strong>基于密度</strong></td>
+              <td>DBSCAN / HDBSCAN</td>
+              <td>基于 &epsilon;-邻域密度可达性定义核心点、边界点与噪声点</td>
+              <td><strong>任意非凸形状</strong>、自动识别离群噪声；<em>O</em>(<em>n</em> log <em>n</em>)</td>
+              <td>地理空间聚类、应急选址分区、异常清洗</td>
+            </tr>
+            <tr>
+              <td><strong>基于概率模型</strong></td>
+              <td>高斯混合模型（GMM）</td>
+              <td>假定 <em>p</em>(<b>x</b>) = &Sigma;<sub>k</sub> &pi;<sub>k</sub> &#119977;(<b>x</b> | <b>&mu;</b><sub>k</sub>, <b>&Sigma;</b><sub>k</sub>)，EM 算法极大似然估计</td>
+              <td><strong>椭球形协方差、软概率归属</strong>；可用 BIC/AIC 选 <em>K</em></td>
+              <td>混合行为画像、多状态统计建模</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="card teal">
+          <strong>数模组合建模范式：</strong>在多指标综合评价问题中，常采用<strong>“降维（PCA）→ 聚类分层（经 PCS 验证）→ 类内差异化赋权评价（熵权法 / TOPSIS）”</strong>的两阶段框架，避免全局单一权重导致的结构性偏差。
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 17 ==================== -->
+    <section class="slide" data-title="6.2 规范化聚类建模流程总结">
+      <div class="slide-header">
+        <div class="slide-section">九、总结与建模规范</div>
+        <h2 class="slide-title">基于 PCS 框架的规范化聚类建模工作流</h2>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2" style="flex:1;">
+          <div class="card white">
+            <div class="card-title"><span class="hl-blue">阶段一</span> 探索性分析与度量空间构建</div>
+            <ul>
+              <li>检验特征量纲跨度、偏态分布与离群值，显式论证标准化与非线性变换（如对数变换）的合理性。</li>
+              <li>记录所有预处理判断选择，严禁跨不同度量空间直接比较内部几何指标。</li>
+            </ul>
+          </div>
+          <div class="card white">
+            <div class="card-title"><span class="hl-blue">阶段二</span> 算法适配与多准则模型选择</div>
+            <ul>
+              <li>依据数据几何假设与样本规模（C）匹配算法范式（K-Means / Ward / DBSCAN / GMM）。</li>
+              <li>联合使用 WCSS、轮廓系数、<strong>无监督 V 折交叉验证（P）</strong>与领域粒度确定簇数 <em>K</em>。</li>
+            </ul>
+          </div>
+          <div class="card white">
+            <div class="card-title"><span class="hl-good">阶段三</span> PCS 扰动与稳健性验证</div>
+            <ul>
+              <li>系统实施数据子采样、特征/预处理扰动与跨算法对比，以 <strong>ARI 矩阵</strong>定量汇报稳定性（S）。</li>
+              <li>核查簇规模分布，排除由非平衡坍缩引发的伪稳定现象。</li>
+            </ul>
+          </div>
+          <div class="card white">
+            <div class="card-title"><span class="hl-good">阶段四</span> 高维语义解释与可复现文档化</div>
+            <ul>
+              <li>综合原型样本、特征边际画像与低维投影给出清晰的领域解释。</li>
+              <li>固定随机种子并公开完整清洗与建模代码，确保分析过程透明可复现。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 18 ==================== -->
+    <section class="slide cover-slide" data-title="参考文献与致谢">
+      <div class="cover-tag">总结与交流 · References &amp; Q&amp;A</div>
+      <h1 class="cover-title" style="font-size:36px;">感谢聆听，敬请各位老师与同学指正</h1>
+      <p class="cover-subtitle" style="margin-bottom:26px;">
+        将无监督聚类从单一算法调用，提升为具备可预测性、可计算性与扰动稳健性的科学建模流程。
+      </p>
+      <div class="grid-2" style="width:100%; max-width:960px;">
+        <div class="card white">
+          <div class="card-title">主要参考文献</div>
+          <ul style="font-size:13px;">
+            <li>Yu, B., &amp; Barter, R. L. (2024). <em>Veridical Data Science: The Practice of Responsible Data Analysis and Decision Making</em>, Chapter 7. MIT Press. (https://vdsbook.com/)</li>
+            <li>Yu, B., &amp; Kumbier, K. (2020). Veridical data science. <em>PNAS</em>, 117(8), 3920–3929.</li>
+            <li>Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. <em>JCAM</em>, 20, 53–65.</li>
+            <li>Hubert, L., &amp; Arabie, P. (1985). Comparing partitions. <em>Journal of Classification</em>, 2(1), 193–218.</li>
+            <li>Tibshirani, R., &amp; Walther, G. (2005). Cluster validation by prediction strength. <em>JCGS</em>, 14(3), 511–528.</li>
+          </ul>
+        </div>
+        <div class="card blue">
+          <div class="card-title">复现代码与实验资源</div>
+          <ul style="font-size:13.5px;">
+            <li><strong>GitHub 仓库</strong>：https://github.com/Alrediph/clustering</li>
+            <li><strong>内容清单</strong>：UCI Wine 与 USDA FNDDS 全流程 Python 复现脚本、清洗数据缓存、实验分析报告及高清图表。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
   </div>
-
-  <!-- 讲稿侧边栏 -->
-  <aside class="notes-panel" id="notesPanel">
-    <div class="notes-header">
-      <h3>演讲讲稿（Speaker Notes）</h3>
-      <span class="notes-duration" id="notesDuration">建议用时 1 分钟</span>
-    </div>
-    <div class="notes-content" id="notesContent"></div>
-  </aside>
 </div>
 
-<!-- 底部控制栏 -->
+<!-- 底部极简控制栏（无讲稿按钮） -->
 <footer class="toolbar">
   <div class="toolbar-group">
-    <button class="btn" id="prevBtn" onclick="prevSlide()">← 上一页</button>
+    <button class="btn" onclick="prevSlide()">← 上一页</button>
     <span class="page-indicator" id="pageIndicator">01 / 18</span>
-    <button class="btn" id="nextBtn" onclick="nextSlide()">下一页 →</button>
+    <button class="btn" onclick="nextSlide()">下一页 →</button>
   </div>
-  <div class="shortcut-hint">快捷键：←/→ 翻页 · S 开关讲稿 · G 目录总览 · F 全屏 · 点击图片放大</div>
+  <div class="shortcut-hint">← / → 翻页 · G 目录 · F 全屏 · 点击图片放大</div>
   <div class="toolbar-group">
     <button class="btn" onclick="toggleOverview()">目录 (G)</button>
-    <button class="btn active" id="notesToggleBtn" onclick="toggleNotes()">隐藏讲稿 (S)</button>
-    <button class="btn" onclick="window.print()">打印 / 导出PDF</button>
+    <button class="btn" onclick="toggleFullscreen()">全屏 (F)</button>
+    <button class="btn" onclick="window.print()">导出 PDF</button>
   </div>
 </footer>
 
-<!-- 图片放大 Lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <img id="lightboxImg" src="" alt="放大预览" />
+  <img id="lightboxImg" src="" alt="图片放大预览" />
 </div>
 
-<!-- 总览弹窗 -->
 <div class="overview-modal" id="overviewModal">
   <div class="overview-top">
-    <h2 style="font-size:20px;">幻灯片目录总览（共 18 页 · 点击跳转）</h2>
+    <h2 style="font-size:20px;">幻灯片目录总览（共 18 页）</h2>
     <button class="btn" onclick="toggleOverview()">关闭 (Esc)</button>
   </div>
   <div class="overview-grid" id="overviewGrid"></div>
@@ -1320,10 +1068,6 @@
 
   const progressBar = document.getElementById('progressBar');
   const pageIndicator = document.getElementById('pageIndicator');
-  const notesPanel = document.getElementById('notesPanel');
-  const notesContent = document.getElementById('notesContent');
-  const notesDuration = document.getElementById('notesDuration');
-  const notesToggleBtn = document.getElementById('notesToggleBtn');
   const overviewModal = document.getElementById('overviewModal');
   const overviewGrid = document.getElementById('overviewGrid');
   const lightbox = document.getElementById('lightbox');
@@ -1332,25 +1076,12 @@
   function renderSlide(idx) {
     current = Math.max(0, Math.min(total - 1, idx));
     slides.forEach((s, i) => s.classList.toggle('active', i === current));
-    const numStr = String(current + 1).padStart(2, '0');
-    pageIndicator.textContent = `${numStr} / ${total}`;
+    pageIndicator.textContent = `${String(current + 1).padStart(2, '0')} / ${total}`;
     progressBar.style.width = `${((current + 1) / total) * 100}%`;
-
-    const activeSlide = slides[current];
-    const noteEl = activeSlide.querySelector('.slide-notes');
-    notesContent.innerHTML = noteEl ? noteEl.innerHTML : '<p>本页暂无讲稿。</p>';
-    notesDuration.textContent = `建议用时：${activeSlide.dataset.time || '1-2 分钟'}`;
-    notesContent.scrollTop = 0;
   }
 
   function nextSlide() { if (current < total - 1) renderSlide(current + 1); }
   function prevSlide() { if (current > 0) renderSlide(current - 1); }
-
-  function toggleNotes() {
-    const hidden = notesPanel.classList.toggle('hidden');
-    notesToggleBtn.classList.toggle('active', !hidden);
-    notesToggleBtn.textContent = hidden ? '显示讲稿 (S)' : '隐藏讲稿 (S)';
-  }
 
   function openLightbox(card) {
     const img = card.querySelector('img');
@@ -1360,12 +1091,20 @@
   }
   function closeLightbox() { lightbox.classList.remove('open'); }
 
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  }
+
   function toggleOverview() {
     const isOpen = overviewModal.classList.toggle('open');
     if (isOpen) {
       overviewGrid.innerHTML = slides.map((s, i) => `
         <div class="overview-item ${i === current ? 'current' : ''}" onclick="renderSlide(${i}); toggleOverview();">
-          <div class="overview-num">Slide ${String(i + 1).padStart(2, '0')} · ${s.dataset.time || ''}</div>
+          <div class="overview-num">Slide ${String(i + 1).padStart(2, '0')}</div>
           <div class="overview-title">${s.dataset.title || ''}</div>
         </div>
       `).join('');
@@ -1385,16 +1124,10 @@
     } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
       e.preventDefault();
       prevSlide();
-    } else if (e.key.toLowerCase() === 's') {
-      toggleNotes();
     } else if (e.key.toLowerCase() === 'g') {
       toggleOverview();
     } else if (e.key.toLowerCase() === 'f') {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen?.();
-      } else {
-        document.exitFullscreen?.();
-      }
+      toggleFullscreen();
     }
   });
 
